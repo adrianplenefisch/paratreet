@@ -6,6 +6,8 @@ mainmodule FoF {
     readonly CProxy_Partition<CentroidData> partitionProxy;
     readonly int peanoKey;
     readonly Real linkingLength;
+    readonly int periodic;
+    readonly Vector3D<Real> fPeriod;
     readonly int minVerticesPerComponent; // strictly greater than
 
     initnode void initialize(void);

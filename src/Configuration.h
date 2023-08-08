@@ -146,10 +146,10 @@ namespace paratreet {
           this->register_field("iFlushPeriodMaxAvgRatio", "r", flush_max_avg_ratio);
           this->register_field("iLbPeriod", "b", lb_period);
 
-          this->register_field("bPeriodic", nullptr, periodic);
-          this->register_field("dxPeriod", nullptr, fPeriod.x);
-          this->register_field("dyPeriod", nullptr, fPeriod.y);
-          this->register_field("dzPeriod", nullptr, fPeriod.z);
+          this->register_field("bPeriodic", "pbc", periodic);
+          this->register_field("dxPeriod", "px", fPeriod.x);
+          this->register_field("dyPeriod", "py", fPeriod.y);
+          this->register_field("dzPeriod", "pz", fPeriod.z);
           this->register_field("nReplicas", nullptr, nReplicas);
           this->register_field("dSoft", "e", dSoft);
           this->register_field("achInputFile", "f", input_file);

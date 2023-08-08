@@ -11,6 +11,8 @@
 /* readonly */ int peanoKey;
 /* readonly */ Real linkingLength;
 /* readonly */ int minVerticesPerComponent; // minimum is strictly greater than this value
+int periodic;
+Vector3D<Real> fPeriod;
 
 using namespace paratreet;
 
@@ -27,6 +29,9 @@ class FoF : public paratreet::Main<CentroidData> {
 
     peanoKey = 3;
     linkingLength = conf.linking_length;
+    fPeriod=conf.fPeriod;
+    periodic = conf.periodic;
+
     minVerticesPerComponent = conf.min_vertices_per_component;
 
     // Process command line arguments
@@ -57,6 +62,8 @@ class FoF : public paratreet::Main<CentroidData> {
           CkPrintf("\t-v [output file prefix]\n");
 
           CkPrintf("\t-ll [linking length]\n");
+          CkPrintf("\t-pbc [periodic boundary conditions]\n");
+          CkPrintf("\t-px (-py, -pz) [x period (y period, z period)]\n");
           CkPrintf("\t-c [minimum vertices per component]\n");
           CkExit();
       }
@@ -113,7 +120,24 @@ class FoF : public paratreet::Main<CentroidData> {
   }
 
   void traversalFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) override {
-    proxy_pack.partition.template startDown<FoFVisitor>(FoFVisitor());
+    
+    //only need to look at cubes that are almost touching (N=1)
+    if(!periodic)
+    {
+      proxy_pack.partition.template startDown<FoFVisitor>(FoFVisitor(Vector3D<Real> (0,0,0)));
+    }
+    else
+    {
+    for (int X = -1; X <= 1; ++X) {
+        for (int Y = -1; Y <= 1; ++Y) {
+          for (int Z = -1; Z <= 1; ++Z) {
+            Vector3D<Real> offset (X * fPeriod.x, Y * fPeriod.y, Z * fPeriod.z);
+            //Vector3D<Real> offset (X, Y, Z);
+            proxy_pack.partition.template startDown<FoFVisitor>(FoFVisitor(offset));
+          }
+        }
+      }
+    }
   }
 
   void postIterationFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) override {

@@ -235,18 +235,26 @@ public:
 
       // Perform traversals
       start_time = CkWallTimer();
+
       paratreet::traversalFn(universe, proxy_pack, iter);
-      CkWaitQD();
+
+      //CkWaitQD();
+
       CkPrintf("Tree traversal: %.3lf ms\n", (CkWallTimer() - start_time) * 1000);
 
+
       start_time = CkWallTimer();
+
 
       // Move the particles in Partitions
       partitions.kick(timestep_size, CkCallbackResumeThread());
 
+
       // Now track PE imbalance for memory reasons
       thread_state_holder.collectMetaData(CkCallbackResumeThread((void *&) msg2));
+
       msg2->toTuple(&res2, &numRedn2);
+
       int numParticleCopies = *(int*)(res2[2].data);
       int numParticleShares = *(int*)(res2[3].data);
       int maxPESize = *(int*)(res2[0].data);
@@ -256,19 +264,24 @@ public:
       bool complete_rebuild = (config.flush_period == 0) ?
           (ratio > config.flush_max_avg_ratio || numParticleShares * 10 > universe.n_particles) :
           (iter % config.flush_period == config.flush_period - 1);
+
       if (iter + 1 == config.num_iterations) complete_rebuild = false;
       CkPrintf("[Meta] n_subtree = %d; timestep_size = %f; numPSParticleCopies = %d; numPSParticleShares = %d; sumPESize = %d; maxPESize = %d, avgPESize = %f; ratio = %f; maxVelocity = %f; rebuild = %s\n", n_subtrees, timestep_size, numParticleCopies, numParticleShares, sumPESize, maxPESize, avgPESize, ratio, max_velocity, (complete_rebuild? "yes" : "no"));
       //End Subtree reduction message parsing
 
+
       paratreet::postIterationFn(universe, proxy_pack, iter);
+
 
       CkReductionMsg* result;
       partitions.perturb(timestep_size, CkCallbackResumeThread((void *&)result));
+
       universe = *((BoundingBox*)result->getData());
       delete result;
       remakeUniverse();
       partitions.rebuild(universe, subtrees, complete_rebuild); // 0.1s for example
-      CkWaitQD();
+
+      //CkWaitQD();
       CkPrintf("Perturbations: %.3lf ms\n", (CkWallTimer() - start_time) * 1000);
       if (!complete_rebuild && config.lb_period > 0 && iter % config.lb_period == config.lb_period - 1){
         start_time = CkWallTimer();
