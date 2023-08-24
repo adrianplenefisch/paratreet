@@ -238,7 +238,7 @@ public:
 
       paratreet::traversalFn(universe, proxy_pack, iter);
 
-      //CkWaitQD();
+      CkWaitQD();
 
       CkPrintf("Tree traversal: %.3lf ms\n", (CkWallTimer() - start_time) * 1000);
 
@@ -281,7 +281,7 @@ public:
       remakeUniverse();
       partitions.rebuild(universe, subtrees, complete_rebuild); // 0.1s for example
 
-      //CkWaitQD();
+      CkWaitQD();
       CkPrintf("Perturbations: %.3lf ms\n", (CkWallTimer() - start_time) * 1000);
       if (!complete_rebuild && config.lb_period > 0 && iter % config.lb_period == config.lb_period - 1){
         start_time = CkWallTimer();
