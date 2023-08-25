@@ -10,3 +10,4 @@ cd ../../src
 make
 make -j8
 cd ../examples
+make FoFApp
