@@ -79,17 +79,19 @@ struct Partition : public CBase_Partition<Data> {
   static std::pair<int, int> getLocationFromID(uint64_t vid);
   void unionRequest(int sp_order, int tp_order);
   void getConnectedComponents(const CkCallback& cb);
+  void copyParticles(std::vector<Particle>& particles, bool check_delete);
+  void copyParticlesCb(int n_particles,CkCallback cb); 
 
   Real time_advanced = 0;
   int iter = 1;
-
+  
 private:
   std::set<int> particle_delete_order;
 
 private:
   void initLocalBranches();
   void erasePartition();
-  void copyParticles(std::vector<Particle>& particles, bool check_delete);
+  
   void startNewTraverser() {
     if (r_local->all_resume_nodes.size() < traversers.size()) {
       r_local->all_resume_nodes.emplace_back();
@@ -439,6 +441,19 @@ void Partition<Data>::copyParticles(std::vector<Particle>& particles, bool check
       }
     }
   }
+}
+
+template <typename Data>
+void Partition<Data>::copyParticlesCb(int n_particles, CkCallback cb) {
+  CkPrintf("First 10 inside:\n");
+  std::vector<Particle> particles;
+  copyParticles(particles,false);
+
+  for (int ii = 680; ii<700; ++ii) {
+    CkPrintf("%ld\n", particles[ii].group_number);
+  }
+  CkPrintf("particles.size: %d\n",particles.size());
+  this->contribute(sizeof(Particle)*particles.size(), particles.data(), CkReduction::concat, cb);
 }
 
 template <typename Data>

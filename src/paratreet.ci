@@ -107,6 +107,7 @@ module paratreet {
     #ifdef FOF    
     entry void initializeLibVertices(const CkCallback &cb);
     entry void getConnectedComponents(const CkCallback& cb);
+    entry void copyParticlesCb(int n_particles,CkCallback& cb);
     #endif
   }
 

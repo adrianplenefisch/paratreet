@@ -1,4 +1,5 @@
 #include <cmath>
+#include "ThreadStateHolder.h"
 
 
 namespace paratreet {

@@ -4,6 +4,9 @@
 #include "unionFindLib.h"
 #include "FoFVisitor.h"
 #include "FoF.decl.h"
+#include "DensityVisitor.h"
+#include "SPHUtils.h"
+#include "ThreadStateHolder.h"
 
 /* readonly */ bool outputFileConfigured;
 /* readonly */ CProxy_UnionFindLib libProxy;
@@ -15,6 +18,33 @@ int periodic;
 Vector3D<Real> fPeriod;
 
 using namespace paratreet;
+
+PARATREET_REGISTER_PER_LEAF_FN(DensityFn, CentroidData, (
+  [](SpatialNode<CentroidData>& leaf, Partition<CentroidData>* partition) {
+    leaf.data.max_rad = 0;
+    for (int pi = 0; pi < leaf.n_particles; pi++) {
+      auto& part = leaf.particles()[pi];
+      auto& Q = leaf.data.pps[pi].neighbors;
+      auto rsq = Q[0].fKey, fBall = std::sqrt(rsq);
+      // sum up the density. requires 0ing of densities
+      Real density = 0.;
+      auto ih2 = 4.0 / rsq;  // 1/h^2
+      for (int i = 0; i < Q.size(); i++) {
+        auto& fDist2 = Q[i].fKey;
+        auto r2 = fDist2 * ih2;
+        auto rs = kernelM4(r2);
+        density += rs * Q[i].pPtr->mass;
+      }
+      Real r_cubed = rsq * fBall;
+      density /= (0.125 * M_PI * r_cubed);
+      auto copy_part = part;
+      copy_part.density = density;
+      leaf.changeParticle(pi, copy_part);
+      leaf.data.pps[pi].sphBallSq = rsq;
+      leaf.data.max_rad = std::max(leaf.data.max_rad, fBall);
+      Q.clear();
+    }
+  }));
 
 static void initialize() {
   BoundingBox::registerReducer();
@@ -161,8 +191,35 @@ class FoF : public paratreet::Main<CentroidData> {
     startTime = CkWallTimer();
     paratreet::outputParticleAccelerations(universe, partitionProxy);
 
+    Particle* particles;
+    CkReductionMsg* mymsg;
+    partitionProxy.copyParticlesCb(universe.n_particles,CkCallbackResumeThread((void*&)mymsg));
+    CkPrintf("\n");
+    particles = ((Particle*)mymsg->getData());
+    
+    for(int ii = 0; ii<universe.n_particles;++ii)
+    {
+        CkPrintf("Group number of %d is: %d\n",ii,(particles+ii)->group_number);
+    }
+    
+    //CkPrintf("Group number of second is: %d/n",particles[1].group_number);
+
+
+
     CkPrintf("[Main] Output complete for friends-of-friends\n");
     CkPrintf("[Main] Writing to output time: %f\n", CkWallTimer() - startTime);
+
+    startTime = CkWallTimer();
+    proxy_pack.partition.template startUpAndDown<DensityVisitor>(DensityVisitor());
+    /*CkWaitQD();
+    CkPrintf("K-nearest neighbors traversal: %.3lf ms\n", (CkWallTimer() - startTime) * 1000);
+    startTime = CkWallTimer();
+    // by now, all density requests have gone out
+    proxy_pack.partition.callPerLeafFn(
+      PARATREET_PER_LEAF_FN(DensityFn, CentroidData), // calculates density, fills requests
+      CkCallbackResumeThread()
+    );
+    CkWaitQD();*/
   }
   
   Real getTimestep(BoundingBox& universe, Real max_velocity) override {

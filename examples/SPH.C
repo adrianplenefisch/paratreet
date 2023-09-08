@@ -3,6 +3,7 @@
 #include "SPHUtils.h"
 #include "PressureVisitor.h"
 #include "DensityVisitor.h"
+#include "ThreadStateHolder.h"
 
 extern bool verify;
 extern Real max_timestep;
