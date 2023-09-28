@@ -17,10 +17,10 @@
 #include "Configuration.h"
 
 #include "paratreet.decl.h"
-/* readonly */ extern CProxy_Reader readers;
-/* readonly */ extern CProxy_TreeSpec treespec;
-/* readonly */ extern CProxy_ThreadStateHolder thread_state_holder;
-/* readonly */ extern int n_readers;
+/* readonly  extern CProxy_Reader readers;*/
+/* readonly  extern CProxy_TreeSpec treespec;*/
+/* readonly  extern CProxy_ThreadStateHolder thread_state_holder;*/
+/* readonly  extern int n_readers;*/
 
 #define PARATREET_MAIN_VAR(m)   m##_impl_
 
@@ -54,10 +54,32 @@
 
 #define PARATREET_PER_LEAF_FN(name, data) CkReference<paratreet::PerLeafAble<data>>(PARATREET_PER_LEAF_FN_INST(name))
 
+struct StartMessage : CMessage_StartMessage
+{
+    int argc;
+    char** argv;
+    bool useInputFile;
+    StartMessage(int c, char** v, bool useInputFile) {
+        argc = c;
+        argv = v;
+        useInputFile = useInputFile;
+    }
+};
+
+class NewMain: public CBase_NewMain {
+  public:
+    /*static CProxy_Reader readers;
+    static CProxy_TreeSpec treespec;
+    static CProxy_ThreadStateHolder thread_state_holder;
+    static int n_readers;*/
+    NewMain();
+    void start(StartMessage* m);
+    void run();
+};
+
 class MainChare: public CBase_MainChare {
   public:
     MainChare(CkArgMsg* m);
-    void run();
 };
 
 namespace paratreet {
@@ -219,10 +241,11 @@ namespace paratreet {
     template<typename Data>
     CProxy_Driver<Data> initialize(const CkCallback& cb) {
         // Create readers
-        n_readers = CkNumPes();
-        readers = CProxy_Reader::ckNew();
-        treespec = CProxy_TreeSpec::ckNew();
-        thread_state_holder = CProxy_ThreadStateHolder::ckNew();
+        int n_readers = CkNumPes();
+        
+        CProxy_TreeSpec treespec = CProxy_TreeSpec::ckNew();
+        CProxy_Reader readers = CProxy_Reader::ckNew(n_readers, treespec);
+        CProxy_ThreadStateHolder thread_state_holder = CProxy_ThreadStateHolder::ckNew();
 
         // Create library chares
         CProxy_TreeCanopy<Data> canopy = CProxy_TreeCanopy<Data>::ckNew();
@@ -230,7 +253,7 @@ namespace paratreet {
         CProxy_CacheManager<Data> cache = CProxy_CacheManager<Data>::ckNew();
         CProxy_Resumer<Data> resumer = CProxy_Resumer<Data>::ckNew();
 
-        CProxy_Driver<Data> driver = CProxy_Driver<Data>::ckNew(cache, resumer, canopy, CkMyPe());
+        CProxy_Driver<Data> driver = CProxy_Driver<Data>::ckNew(cache, resumer, canopy,readers,treespec,thread_state_holder, CkMyPe());
         // Call the driver initialization routine (performs decomposition)
         auto& cfg = const_cast<paratreet::Configuration&>(paratreet::getConfiguration());
         driver.init(cb, CkReference<Configuration>(cfg));

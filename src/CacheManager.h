@@ -12,7 +12,7 @@
 #include <vector>
 #include <mutex>
 
-extern CProxy_TreeSpec treespec;
+//extern CProxy_TreeSpec treespec;
 
 template <typename Data>
 struct NodePool {
@@ -24,6 +24,7 @@ struct NodePool {
 
 template <typename Data, size_t BranchFactor>
 class FullNodePool : public NodePool<Data> {
+  //CProxy_TreeSpec treespec;
 public:
   FullNodePool(size_t pool_elem_sizei)
   : pool_elem_size(pool_elem_sizei)

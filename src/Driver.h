@@ -25,9 +25,9 @@
 #include "Subtree.h"
 #include "unionFindLib.h"
 
-extern CProxy_Reader readers;
-extern CProxy_TreeSpec treespec;
-extern CProxy_ThreadStateHolder thread_state_holder;
+//extern CProxy_Reader readers;
+//extern CProxy_TreeSpec treespec;
+//extern CProxy_ThreadStateHolder thread_state_holder;
 
 template <typename Data>
 class Driver : public CBase_Driver<Data> {
@@ -44,10 +44,17 @@ public:
   int n_partitions;
   double start_time;
   std::vector<int> partition_locations;
+  CProxy_Reader readers;
+  CProxy_TreeSpec treespec;
+  CProxy_ThreadStateHolder thread_state_holder;
   CProxy_UnionFindLib libProxy;
+  int n_readers;
 
-  Driver(CProxy_CacheManager<Data> cache_manager_, CProxy_Resumer<Data> resumer_, CProxy_TreeCanopy<Data> calculator_) :
-    cache_manager(cache_manager_), resumer(resumer_), calculator(calculator_), storage_sorted(false) {}
+  Driver(CProxy_CacheManager<Data> cache_manager_, CProxy_Resumer<Data> resumer_, CProxy_TreeCanopy<Data> calculator_,
+            CProxy_Reader rds,
+            CProxy_TreeSpec trsp,
+            CProxy_ThreadStateHolder tsh) :
+    cache_manager(cache_manager_), resumer(resumer_), calculator(calculator_), storage_sorted(false),treespec(trsp),thread_state_holder(tsh),readers(rds) {}
 
   // Performs initial decomposition
   void init(const CkCallback& cb, const paratreet::Configuration& cfg) {
@@ -120,7 +127,7 @@ public:
     bool matching_decomps = config.decomp_type == paratreet::subtreeDecompForTree(config.tree_type);
     // Set up splitters for decomposition
     start_time = CkWallTimer();
-    n_partitions = treespec.ckLocalBranch()->getPartitionDecomposition()->findSplitters(universe, readers, config.min_n_partitions);
+    n_partitions = treespec.ckLocalBranch()->getPartitionDecomposition()->findSplitters(universe, readers, treespec, config.min_n_partitions);
     partition_locations.resize(n_partitions);
     treespec.receiveDecomposition(CkCallbackResumeThread(),
         CkPointer<Decomposition>(treespec.ckLocalBranch()->getPartitionDecomposition()), false);
@@ -132,7 +139,7 @@ public:
     treespec.ckLocalBranch()->getPartitionDecomposition()->setArrayOpts(partition_opts, {}, false);
     partitions = CProxy_Partition<Data>::ckNew(
       n_partitions, cache_manager, resumer, calculator,
-      this->thisProxy, matching_decomps, partition_opts
+      this->thisProxy,readers, treespec, thread_state_holder,libProxy,n_readers, matching_decomps, partition_opts
       );
     CkPrintf("Created %d Partitions: %.3lf ms\n", n_partitions,
         (CkWallTimer() - start_time) * 1000);
@@ -153,7 +160,7 @@ public:
         CkPointer<Decomposition>(treespec.ckLocalBranch()->getPartitionDecomposition()), true);
     }
     else {
-      n_subtrees = treespec.ckLocalBranch()->getSubtreeDecomposition()->findSplitters(universe, readers, config.min_n_subtrees);
+      n_subtrees = treespec.ckLocalBranch()->getSubtreeDecomposition()->findSplitters(universe, readers, treespec, config.min_n_subtrees);
       treespec.receiveDecomposition(CkCallbackResumeThread(),
         CkPointer<Decomposition>(treespec.ckLocalBranch()->getSubtreeDecomposition()), true);
       CkPrintf("Setting up splitters for subtree decompositions: %.3lf ms\n",
@@ -169,7 +176,7 @@ public:
       CkCallbackResumeThread(),
       universe.n_particles, n_subtrees, n_partitions,
       calculator, resumer,
-      cache_manager, this->thisProxy, matching_decomps, subtree_opts
+      cache_manager, this->thisProxy,treespec,readers,thread_state_holder, matching_decomps, subtree_opts
       );
     CkPrintf("Created %d Subtrees: %.3lf ms\n", n_subtrees,
         (CkWallTimer() - start_time) * 1000);

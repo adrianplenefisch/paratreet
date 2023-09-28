@@ -90,6 +90,7 @@ public:
 template <typename Data, typename Visitor>
 class TransposedDownTraverser : public Traverser<Data> {
 protected:
+
   Visitor v;
   size_t trav_idx = 0;
   std::vector<Node<Data>*> leaves;
@@ -112,9 +113,10 @@ protected:
   }
 
 public:
-  TransposedDownTraverser(Visitor& vi, size_t ti, std::vector<Node<Data>*> leavesi, Partition<Data>& parti, bool delay_leafi = false)
+  TransposedDownTraverser(Visitor& vi, size_t ti, std::vector<Node<Data>*> leavesi, Partition<Data>& parti, CProxy_ThreadStateHolder thread_state_holder, bool delay_leafi = false)
     : v(vi), trav_idx(ti), leaves(leavesi), part(parti), delay_leaf(delay_leafi)
   {
+
     request_pause_interval = paratreet::getConfiguration().request_pause_interval;
     stats = thread_state_holder.ckLocalBranch();
     if (delay_leaf) interactions.resize(leaves.size());
@@ -250,7 +252,7 @@ protected:
   }
 
 public:
-  BasicDownTraverser(Visitor& vi, size_t ti, std::vector<Node<Data>*> leavesi, Partition<Data>& parti, bool delay_leafi = false)
+  BasicDownTraverser(Visitor& vi, size_t ti, std::vector<Node<Data>*> leavesi, Partition<Data>& parti, CProxy_ThreadStateHolder thread_state_holder, bool delay_leafi = false)
     : v(vi), trav_idx(ti), leaves(leavesi), part(parti), delay_leaf(delay_leafi)
   {
     request_pause_interval = paratreet::getConfiguration().request_pause_interval;
@@ -362,7 +364,7 @@ private:
   std::vector<int> num_waiting;
   std::vector<Node<Data>*> trav_tops;
 public:
-  UpnDTraverser(Visitor& vi, size_t ti, Partition<Data>& parti) : v(vi), trav_idx(ti), part(parti) {
+  UpnDTraverser(Visitor& vi, size_t ti, Partition<Data>& parti, CProxy_ThreadStateHolder thread_state_holder) : v(vi), trav_idx(ti), part(parti) {
     trav_tops.resize(part.leaves.size());
     for (int i = 0; i < part.leaves.size(); i++) {
       auto tree_leaf = part.tree_leaves[i];
@@ -484,7 +486,7 @@ private:
   ThreadStateHolder* stats = nullptr;
   std::unordered_map<Key, std::vector<Node<Data>*>> curr_nodes; // source nodes to target nodes
 public:
-  DualTraverser(Visitor& vi, size_t ti, Subtree<Data>& tpi) : v(vi), trav_idx(ti), tp(tpi)
+  DualTraverser(Visitor& vi, size_t ti, Subtree<Data>& tpi, CProxy_ThreadStateHolder thread_state_holder) : v(vi), trav_idx(ti), tp(tpi)
   {
     stats = thread_state_holder.ckLocalBranch();
   }

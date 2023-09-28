@@ -10,8 +10,7 @@
 #include "TreeSpec.h"
 #include "Modularization.h"
 
-extern int n_readers;
-extern CProxy_TreeSpec treespec;
+
 
 class Reader : public CBase_Reader {
   std::vector<Particle> particles;
@@ -21,13 +20,15 @@ class Reader : public CBase_Reader {
   static constexpr const Real gasConstant = 1.0;
   static constexpr const Real gammam1 = 5.0/3.0 - 1;
   static constexpr const Real meanMolWeight = 1.0;
+  int n_readers;
+  CProxy_TreeSpec treespec;
 
   public:
     Real start_time = 0;
     BoundingBox universe;
     // std::vector<Splitter> splitters;
     // std::vector<Key> SFCsplitters;
-    Reader();
+    Reader(int nr, CProxy_TreeSpec trsp);
 
     // Loading particles and assigning keys
     void load(std::string, const CkCallback&);

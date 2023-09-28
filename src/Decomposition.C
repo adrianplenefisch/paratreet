@@ -112,11 +112,11 @@ void SfcDecomposition::countAssignments(const std::vector<GenericSplitter>& stat
   reader->contribute(sizeof(int) * counts.size(), &counts[0], CkReduction::sum_int, cb);
 }
 
-int SfcDecomposition::findSplitters(BoundingBox &universe, CProxy_Reader &readers, int min_n_splitters) {
-  return parallelFindSplitters(universe, readers, min_n_splitters);
+int SfcDecomposition::findSplitters(BoundingBox &universe, CProxy_Reader &readers, CProxy_TreeSpec treespec, int min_n_splitters) {
+  return parallelFindSplitters(universe, readers, treespec, min_n_splitters);
 }
 
-int SfcDecomposition::parallelFindSplitters(BoundingBox &universe, CProxy_Reader &readers, int min_n_splitters) {
+int SfcDecomposition::parallelFindSplitters(BoundingBox &universe, CProxy_Reader &readers, CProxy_TreeSpec treespec, int min_n_splitters) {
   const int branch_factor = treespec.ckLocalBranch()->getTree()->getBranchFactor();
   const int log_branch_factor = log2(branch_factor);
 
@@ -193,7 +193,7 @@ int SfcDecomposition::parallelFindSplitters(BoundingBox &universe, CProxy_Reader
   return splitters.size();
 }
 
-int SfcDecomposition::serialFindSplitters(BoundingBox &universe, CProxy_Reader &readers, int min_n_splitters) {
+int SfcDecomposition::serialFindSplitters(BoundingBox &universe, CProxy_Reader &readers, CProxy_TreeSpec treespec, int min_n_splitters) {
   const int branch_factor = treespec.ckLocalBranch()->getTree()->getBranchFactor();
   const int log_branch_factor = log2(branch_factor);
   CkReductionMsg *msg;
@@ -353,7 +353,7 @@ void OctDecomposition::countAssignments(const std::vector<GenericSplitter>& stat
 }
 
 
-int OctDecomposition::findSplitters(BoundingBox &universe, CProxy_Reader &readers, int min_n_splitters) {
+int OctDecomposition::findSplitters(BoundingBox &universe, CProxy_Reader &readers, CProxy_TreeSpec treespec, int min_n_splitters) {
   const int branch_factor = getBranchFactor();
   const int log_branch_factor = log2(branch_factor);
 
@@ -497,7 +497,7 @@ void BinaryDecomposition::initBinarySplit(const std::vector<Particle>& particles
   for (auto && particle : particles) bins.back().emplace_back(particle.partition_idx, particle.position);
 }
 
-int BinaryDecomposition::findSplitters(BoundingBox &universe, CProxy_Reader &readers, int min_n_splitters) {
+int BinaryDecomposition::findSplitters(BoundingBox &universe, CProxy_Reader &readers, CProxy_TreeSpec treespec, int min_n_splitters) {
   return parallelFindSplitters(universe, readers, min_n_splitters);
 }
 

@@ -1,7 +1,7 @@
 #include "Modularization.h"
 #include "TreeSpec.h"
 
-extern CProxy_TreeSpec treespec;
+//extern CProxy_TreeSpec treespec;
 
 namespace {
 void partialSort(Particle* particles, int n_particles, int dim) {
@@ -21,7 +21,7 @@ void partialSort(Particle* particles, int n_particles, int dim) {
 }
 }
 
-void Tree::buildCanopy(int tp_index, const SendProxyFn &fn) {
+void Tree::buildCanopy(int tp_index, const SendProxyFn &fn, CProxy_TreeSpec treespec) {
     Key tp_key = treespec.ckLocalBranch()->getSubtreeDecomposition()->getTpKey(tp_index);
     Key temp_key = tp_key;
     fn(tp_key, tp_index);

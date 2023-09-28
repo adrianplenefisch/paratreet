@@ -15,10 +15,6 @@
 #include "unionFindLib.h"
 
 CkpvExtern(int, _lb_obj_index);
-extern CProxy_TreeSpec treespec;
-extern CProxy_Reader readers;
-extern CProxy_ThreadStateHolder thread_state_holder;
-extern CProxy_UnionFindLib libProxy;
 
 using namespace LBCommon;
 
@@ -42,8 +38,14 @@ struct Partition : public CBase_Partition<Data> {
   CacheManager<Data> *cm_local;
   CProxy_Resumer<Data> r_proxy;
   Resumer<Data>* r_local;
+  CProxy_Reader readers;
+  CProxy_TreeSpec treespec;
+  CProxy_ThreadStateHolder thread_state_holder;
+  CProxy_UnionFindLib libProxy;
+  int n_readers;
 
-  Partition(int, CProxy_CacheManager<Data>, CProxy_Resumer<Data>, TCHolder<Data>, CProxy_Driver<Data> driver, bool);
+  Partition(int, CProxy_CacheManager<Data>, CProxy_Resumer<Data>, TCHolder<Data>, CProxy_Driver<Data> driver,CProxy_Reader rdrs,
+                  CProxy_TreeSpec trsp, CProxy_ThreadStateHolder tsh, CProxy_UnionFindLib ufl,  int nr, bool);
   Partition(CkMigrateMessage * msg){delete msg;};
 
   template<typename Visitor> void startDown(Visitor v);
@@ -112,9 +114,15 @@ template <typename Data>
 Partition<Data>::Partition(
   int np, CProxy_CacheManager<Data> cm,
   CProxy_Resumer<Data> rp, TCHolder<Data> tc_holder,
-  CProxy_Driver<Data> driver, bool matching_decomps_
+  CProxy_Driver<Data> driver, CProxy_Reader rdrs,
+                  CProxy_TreeSpec trsp, CProxy_ThreadStateHolder tsh, CProxy_UnionFindLib ufl,  int nr, bool matching_decomps_
   )
 {
+  readers = rdrs;
+  treespec = trsp;
+  thread_state_holder =tsh;
+  n_readers =nr;
+  libProxy = ufl;
   this->usesAtSync = true;
   n_partitions = np;
   tc_proxy = tc_holder.proxy;
@@ -143,7 +151,7 @@ template <typename Visitor>
 void Partition<Data>::startDown(Visitor v)
 {
   initLocalBranches();
-  traversers.emplace_back(new TransposedDownTraverser<Data, Visitor>(v, traversers.size(), leaves, *this));
+  traversers.emplace_back(new TransposedDownTraverser<Data, Visitor>(v, traversers.size(), leaves, *this, thread_state_holder));
   startNewTraverser();
 }
 
@@ -162,7 +170,7 @@ template <typename Visitor>
 void Partition<Data>::startBasicDown(Visitor v)
 {
   initLocalBranches();
-  traversers.emplace_back(new BasicDownTraverser<Data, Visitor>(v, traversers.size(), leaves, *this));
+  traversers.emplace_back(new BasicDownTraverser<Data, Visitor>(v, traversers.size(), leaves, *this,thread_state_holder));
   startNewTraverser();
 }
 
@@ -171,7 +179,7 @@ template <typename Visitor>
 void Partition<Data>::startUpAndDown(Visitor v)
 {
   initLocalBranches();
-  traversers.emplace_back(new UpnDTraverser<Data, Visitor>(v, traversers.size(), *this));
+  traversers.emplace_back(new UpnDTraverser<Data, Visitor>(v, traversers.size(), *this,thread_state_holder));
   startNewTraverser();
 }
 

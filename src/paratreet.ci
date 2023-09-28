@@ -17,10 +17,12 @@ module paratreet {
   PUPable KdDecomposition;
   PUPable LongestDimDecomposition;
 
-  readonly CProxy_Reader readers;
-  readonly CProxy_TreeSpec treespec;
-  readonly CProxy_ThreadStateHolder thread_state_holder;
-  readonly int n_readers;
+  //readonly CProxy_Reader readers;
+  //readonly CProxy_TreeSpec treespec;
+  //readonly CProxy_ThreadStateHolder thread_state_holder;
+  //readonly int n_readers;
+
+  message StartMessage;
 
   namespace paratreet {
     initproc void __registerMain(void);
@@ -81,7 +83,7 @@ module paratreet {
 
   template <typename Data>
   array [1d] Partition {
-    entry Partition(int, CProxy_CacheManager<Data>, CProxy_Resumer<Data>, TCHolder<Data>, CProxy_Driver<Data>, bool);
+    entry Partition(int, CProxy_CacheManager<Data>, CProxy_Resumer<Data>, TCHolder<Data>, CProxy_Driver<Data> driver,CProxy_Reader rdrs,CProxy_TreeSpec trsp, CProxy_ThreadStateHolder tsh, CProxy_UnionFindLib ufl,  int nr, bool);
     template <typename Visitor> entry void startDown(Visitor v);
     template <typename Visitor> entry void startBasicDown(Visitor v);
     template <typename Visitor> entry void startUpAndDown(Visitor v);
@@ -113,7 +115,9 @@ module paratreet {
 
   template <typename Data>
   array [1d] Subtree {
-    entry Subtree(const CkCallback&, int, int, int, TCHolder<Data>, CProxy_Resumer<Data>, CProxy_CacheManager<Data>, DPHolder<Data>, bool);
+    entry Subtree(const CkCallback&, int, int, int, TCHolder<Data>,
+          CProxy_Resumer<Data>, CProxy_CacheManager<Data>, DPHolder<Data>, 
+          CProxy_TreeSpec trsp, CProxy_Reader rds, CProxy_ThreadStateHolder tsh, bool);
     entry void receive(ParticleMsg*);
     entry void buildTree(CProxy_Partition<Data>, CkCallback);
     entry void requestNodes(Key, int);
@@ -139,7 +143,10 @@ module paratreet {
 
   template <typename Data>
   chare Driver {
-    entry Driver(CProxy_CacheManager<Data>, CProxy_Resumer<Data>, CProxy_TreeCanopy<Data>);
+    entry Driver(CProxy_CacheManager<Data> cache_manager_, CProxy_Resumer<Data> resumer_, CProxy_TreeCanopy<Data> calculator_,
+            CProxy_Reader rds,
+            CProxy_TreeSpec trsp,
+            CProxy_ThreadStateHolder tsh);
     entry [threaded] void init(CkCallback cb, CkReference<paratreet::Configuration>);
     entry [threaded] void run(CkCallback cb);
     entry [reductiontarget] void countInts(unsigned long long intrn_counts [4]);
@@ -153,7 +160,7 @@ module paratreet {
   }
 
   group Reader {
-    entry Reader();
+    entry Reader(int nr, CProxy_TreeSpec trsp);
     entry void load(std::string, const CkCallback&);
     entry void setSoft(const double dSoft, const CkCallback&);
     entry void computeUniverseBoundingBox(const CkCallback&);
@@ -193,9 +200,21 @@ module paratreet {
     entry CollocateMap(CkPointer<Decomposition>, const std::vector<int>&);
   };
 
-  mainchare MainChare {
-    entry [nokeep] MainChare(CkArgMsg* m);
+  chare NewMain {
+
+    //readonly CProxy_Reader readers;
+    //readonly CProxy_TreeSpec treespec;
+    //readonly CProxy_ThreadStateHolder thread_state_holder;
+    //readonly int n_readers;
+    entry [nokeep] NewMain();
+    entry [nokeep] void start(StartMessage* m);
     entry [threaded] void run();
+    
+
   };
 
+  mainchare MainChare {
+    entry [nokeep] MainChare(CkArgMsg* m);
+    
+  };
 };

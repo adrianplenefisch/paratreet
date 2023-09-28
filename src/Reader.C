@@ -6,7 +6,11 @@
 #include <cstring>
 #include <algorithm>
 
-Reader::Reader() : particle_index(0) {}
+Reader::Reader(int nr, CProxy_TreeSpec trsp) : particle_index(0) {
+  n_readers = nr;
+  treespec = trsp;
+
+}
 
 void Reader::load(std::string input_file, const CkCallback& cb) {
   

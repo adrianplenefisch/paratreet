@@ -9,6 +9,7 @@
 
 class Reader;
 class CProxy_Reader;
+class CProxy_TreeSpec;
 class BoundingBox;
 class Splitter;
 class Particle;
@@ -56,7 +57,7 @@ struct Decomposition: public PUP::able {
 
   virtual void doSplit(const std::vector<GenericSplitter>& splits, Reader* reader, const CkCallback& cb) {}
 
-  virtual int findSplitters(BoundingBox &universe, CProxy_Reader &readers, int min_n_splitters) = 0;
+  virtual int findSplitters(BoundingBox &universe, CProxy_Reader &readers, CProxy_TreeSpec treespec, int min_n_splitters) = 0;
 
   virtual Key getTpKey(int idx) = 0;
 
@@ -88,14 +89,14 @@ struct SfcDecomposition : public Decomposition {
   virtual int getNumParticles(int tp_index) override;
   virtual int getPartitionHome(int tp_index) override;
   virtual void countAssignments(const std::vector<GenericSplitter>& states, const std::vector<Particle>& particles, Reader* reader, const CkCallback& cb, bool weight_by_partition) override;
-  virtual int findSplitters(BoundingBox &universe, CProxy_Reader &readers, int min_n_splitters) override;
+  virtual int findSplitters(BoundingBox &universe, CProxy_Reader &readers, CProxy_TreeSpec treespec, int min_n_splitters) override;
   virtual void alignSplitters(SfcDecomposition *);
   std::vector<Splitter> getSplitters();
   virtual void pup(PUP::er& p) override;
 
 private:
-  int parallelFindSplitters(BoundingBox &universe, CProxy_Reader &readers, int min_n_splitters);
-  int serialFindSplitters(BoundingBox &universe, CProxy_Reader &readers, int min_n_splitters);
+  int parallelFindSplitters(BoundingBox &universe, CProxy_Reader &readers, CProxy_TreeSpec treespec, int min_n_splitters) ;
+  int serialFindSplitters(BoundingBox &universe, CProxy_Reader &readers, CProxy_TreeSpec treespec, int min_n_splitters);
 
 protected:
   std::vector<Splitter> splitters;
@@ -113,7 +114,7 @@ struct OctDecomposition : public SfcDecomposition {
 
   virtual int flush(std::vector<Particle> &particles, const SendParticlesFn &fn) override;
   virtual void countAssignments(const std::vector<GenericSplitter>& states, const std::vector<Particle>& particles, Reader* reader, const CkCallback& cb, bool weight_by_partition) override;
-  virtual int findSplitters(BoundingBox &universe, CProxy_Reader &readers, int min_n_splitters) override;
+  virtual int findSplitters(BoundingBox &universe, CProxy_Reader &readers, CProxy_TreeSpec treespec, int min_n_splitters) override;
   virtual void setArrayOpts(CkArrayOptions& opts, const std::vector<int>& partition_locations, bool collocate) override;
 };
 
@@ -139,7 +140,7 @@ struct BinaryDecomposition : public Decomposition {
   int flush(std::vector<Particle> &particles, const SendParticlesFn &fn) override;
   int getNumParticles(int tp_index) override;
   int getPartitionHome(int tp_index) override;
-  int findSplitters(BoundingBox &universe, CProxy_Reader &readers, int min_n_splitters) override;
+  int findSplitters(BoundingBox &universe, CProxy_Reader &readers, CProxy_TreeSpec treespec, int min_n_splitters) override;
   void doSplit(const std::vector<GenericSplitter>& splits, Reader* reader, const CkCallback& cb) override;
 
   virtual void pup(PUP::er& p) override;

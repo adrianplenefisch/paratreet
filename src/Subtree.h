@@ -13,14 +13,14 @@
 #include "Resumer.h"
 #include "Driver.h"
 #include "OrientedBox.h"
+#include "ThreadStateHolder.h"
 
 #include <cstring>
 #include <queue>
 #include <vector>
 #include <fstream>
 
-extern CProxy_TreeSpec treespec;
-extern CProxy_Reader readers;
+
 
 template <typename Data>
 class Subtree : public CBase_Subtree<Data> {
@@ -44,13 +44,17 @@ public:
   CProxy_Resumer<Data> r_proxy;
   Resumer<Data>* r_local = nullptr;
   CacheManager<Data>* cm_local = nullptr;
+  CProxy_TreeSpec treespec;
+  CProxy_Reader readers;
+  CProxy_ThreadStateHolder thread_state_holder;
 
   std::unique_ptr<Traverser<Data>> traverser;
 
   std::vector<Particle> flushed_particles; // For debugging
 
   Subtree(const CkCallback&, int, int, int, TCHolder<Data>,
-          CProxy_Resumer<Data>, CProxy_CacheManager<Data>, DPHolder<Data>, bool);
+          CProxy_Resumer<Data>, CProxy_CacheManager<Data>, DPHolder<Data>, 
+          CProxy_TreeSpec trsp, CProxy_Reader rds, CProxy_ThreadStateHolder tsh, bool);
   Subtree(CkMigrateMessage * msg){
     delete msg;
   };
@@ -105,12 +109,15 @@ Subtree<Data>::Subtree(const CkCallback& cb, int n_total_particles_,
                        int n_subtrees_, int n_partitions_, TCHolder<Data> tc_holder,
                        CProxy_Resumer<Data> r_proxy_,
                        CProxy_CacheManager<Data> cm_proxy_, DPHolder<Data> dp_holder,
+                       CProxy_TreeSpec trsp, CProxy_Reader rds, CProxy_ThreadStateHolder tsh,
                        bool matching_decomps_){
   //this->usesAtSync = true;
   n_total_particles = n_total_particles_;
   n_subtrees = n_subtrees_;
   n_partitions = n_partitions_;
-
+  treespec = trsp;
+  readers = rds;
+  thread_state_holder = tsh;
   tc_proxy = tc_holder.proxy;
   cm_proxy = cm_proxy_;
   cm_local = cm_proxy.ckLocalBranch();
@@ -128,7 +135,7 @@ Subtree<Data>::Subtree(const CkCallback& cb, int n_total_particles_,
                                  tp_index, cm_proxy, dp_holder);
     };
 
-  treespec.ckLocalBranch()->getTree()->buildCanopy(this->thisIndex, sendProxy);
+  treespec.ckLocalBranch()->getTree()->buildCanopy(this->thisIndex, sendProxy, treespec);
 
   local_root = nullptr;
 
@@ -238,7 +245,7 @@ void Subtree<Data>::startDual(Visitor v) {
   }
   r_local->subtree_proxy = this->thisProxy;
   r_local->use_subtree = true;
-  traverser.reset(new DualTraverser<Data, Visitor>(v, 0, *this));
+  traverser.reset(new DualTraverser<Data, Visitor>(v, 0, *this,thread_state_holder));
   traverser->start();
 }
 

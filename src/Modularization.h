@@ -9,7 +9,7 @@ class Tree {
 public:
   virtual ~Tree() = default;
   virtual int getBranchFactor() = 0;
-  virtual void buildCanopy(int tp_index, const SendProxyFn &fn);
+  virtual void buildCanopy(int tp_index, const SendProxyFn &fn,CProxy_TreeSpec treespec);
   virtual void prepParticles(Particle* particles, size_t n_particles, int depth) {}
   // Returns start + n_particles
   virtual int findChildsLastParticle(const Particle* particles, int start, int finish, Key child_key, size_t log_branch_factor) = 0;

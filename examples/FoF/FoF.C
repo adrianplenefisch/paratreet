@@ -3,13 +3,17 @@
 #include "CentroidData.h"
 #include "unionFindLib.h"
 #include "FoFVisitor.h"
+#include "subsetVisitor.h"
 #include "FoF.decl.h"
+#include "subsetCreator.h"
+
+
 #include "DensityVisitor.h"
 #include "SPHUtils.h"
 #include "ThreadStateHolder.h"
 
 /* readonly */ bool outputFileConfigured;
-/* readonly */ CProxy_UnionFindLib libProxy;
+/* readonly  CProxy_UnionFindLib libProxy;*/
 /* readonly */ CProxy_Partition<CentroidData> partitionProxy;
 /* readonly */ int peanoKey;
 /* readonly */ Real linkingLength;
@@ -51,6 +55,9 @@ static void initialize() {
 }
 
 class FoF : public paratreet::Main<CentroidData> {
+
+  CProxy_UnionFindLib libProxy;
+  
   void main(CkArgMsg* m) override {
     // Initialize readonly variables
     if (conf.input_file.empty()) 
@@ -154,7 +161,7 @@ class FoF : public paratreet::Main<CentroidData> {
     //only need to look at cubes that are almost touching (N=1)
     if(!periodic)
     {
-      proxy_pack.partition.template startDown<FoFVisitor>(FoFVisitor(Vector3D<Real> (0,0,0)));
+      proxy_pack.partition.template startDown<FoFVisitor>(FoFVisitor(Vector3D<Real> (0,0,0), libProxy));
     }
     else
     {
@@ -163,11 +170,42 @@ class FoF : public paratreet::Main<CentroidData> {
           for (int Z = -1; Z <= 1; ++Z) {
             Vector3D<Real> offset (X * fPeriod.x, Y * fPeriod.y, Z * fPeriod.z);
             //Vector3D<Real> offset (X, Y, Z);
-            proxy_pack.partition.template startDown<FoFVisitor>(FoFVisitor(offset));
+            proxy_pack.partition.template startDown<FoFVisitor>(FoFVisitor(offset, libProxy));
           }
         }
       }
     }
+    double start_time = CkWallTimer();
+    proxy_pack.partition.template startUpAndDown<DensityVisitor>(DensityVisitor());
+    CkWaitQD();
+    CkPrintf("K-nearest neighbors traversal: %.3lf ms\n", (CkWallTimer() - start_time) * 1000);
+    start_time = CkWallTimer();
+    // by now, all density requests have gone out
+    proxy_pack.partition.callPerLeafFn(
+      PARATREET_PER_LEAF_FN(DensityFn, CentroidData), // calculates density, fills requests
+      CkCallbackResumeThread()
+    );
+    CkWaitQD();
+    CkPrintf("Density calculations and sharing: %.3lf ms\n", (CkWallTimer() - start_time) * 1000);
+
+    proxy_pack.partition.template startDown<subsetVisitor>(subsetVisitor(Vector3D<Real> (0,0,0)));
+    CProxy_subsetCreator::ckNew();
+
+    /*int argcnew = 14;
+    char* argvnew[14] = {"./FoFApp", "-f", "cube300.000128", "-v", "cube300.000128", "-pbc", "-px", "1", "-py", "1", "-pz", "1", "-ll", "0.00417"}; 
+    
+    for(int iii=0; iii<argcnew;++iii)
+    {
+      CkPrintf("New:    %s\n",argvnew[iii]);
+    }
+
+    CkPrintf("%s\n", argvnew[2]);
+
+    CkArgMsg* mm = new CkArgMsg(); 
+    mm->argc = argcnew;
+    mm->argv = argvnew;
+    CProxy_MainChare::ckNew(mm,0);*/
+
   }
 
   void postIterationFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) override {
@@ -191,16 +229,16 @@ class FoF : public paratreet::Main<CentroidData> {
     startTime = CkWallTimer();
     paratreet::outputParticleAccelerations(universe, partitionProxy);
 
-    Particle* particles;
+    /*Particle* particles;
     CkReductionMsg* mymsg;
     partitionProxy.copyParticlesCb(universe.n_particles,CkCallbackResumeThread((void*&)mymsg));
     CkPrintf("\n");
-    particles = ((Particle*)mymsg->getData());
+    particles = ((Particle*)mymsg->getData());*/
     
-    for(int ii = 0; ii<universe.n_particles;++ii)
+    /*for(int ii = 0; ii<1000;++ii)
     {
-        CkPrintf("Group number of %d is: %d\n",ii,(particles+ii)->group_number);
-    }
+        CkPrintf("Group number of %d is: %f\n",ii,(particles+ii)->density);
+    }*/
     
     //CkPrintf("Group number of second is: %d/n",particles[1].group_number);
 
@@ -209,8 +247,7 @@ class FoF : public paratreet::Main<CentroidData> {
     CkPrintf("[Main] Output complete for friends-of-friends\n");
     CkPrintf("[Main] Writing to output time: %f\n", CkWallTimer() - startTime);
 
-    startTime = CkWallTimer();
-    proxy_pack.partition.template startUpAndDown<DensityVisitor>(DensityVisitor());
+    
     /*CkWaitQD();
     CkPrintf("K-nearest neighbors traversal: %.3lf ms\n", (CkWallTimer() - startTime) * 1000);
     startTime = CkWallTimer();

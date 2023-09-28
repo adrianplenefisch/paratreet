@@ -49,7 +49,7 @@ FoF.decl.h: ./FoF/FoF.ci $(DATA)
 FoFApp: FoF.decl.h FoF.o ../src/libparatreet.a moments.o
 	$(CHARMC) -DFOF -language charm++ $(LB_LIBS) -o FoFApp FoF.o moments.o $(LD_LIBS)
 
-FoF.o: ./FoF/FoF.C ./FoF.decl.h ./FoF/FoFVisitor.h
+FoF.o: ./FoF/FoF.C ./FoF.decl.h ./FoF/FoFVisitor.h subsetVisitor.h
 	$(CHARMC) -DFOF -c $<
 
 test: all

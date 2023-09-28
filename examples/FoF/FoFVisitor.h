@@ -11,23 +11,25 @@
 #include "unionFindLib.h"
 #include "Partition.h"
 
-extern CProxy_UnionFindLib libProxy;
-extern CProxy_Partition<CentroidData> partitionProxy;
+//extern CProxy_UnionFindLib libProxy;
+//extern CProxy_Partition<CentroidData> partitionProxy;
 extern Real linkingLength;
 extern Vector3D<Real> fPeriod;
 
 class FoFVisitor {
+  CProxy_UnionFindLib libProxy;
 
 private:
   Vector3D<Real> offset;
 public:
   static constexpr const bool CallSelfLeaf = true;
-  FoFVisitor() : offset(0, 0, 0) {}
-  FoFVisitor(Vector3D<Real> offseti) : offset(offseti) {}
+  FoFVisitor(CProxy_UnionFindLib lbpx) : offset(0, 0, 0) {libProxy = lbpx;}
+  FoFVisitor(Vector3D<Real> offseti, CProxy_UnionFindLib lbpx) : offset(offseti) {libProxy = lbpx;}
 
 
   void pup(PUP::er& p) {
     p | offset;
+    p | libProxy;
   }
 
 
