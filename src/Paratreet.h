@@ -16,6 +16,8 @@
 #include "Partition.h"
 #include "Configuration.h"
 
+#include "ProxyPackSeparate.h"
+
 #include "paratreet.decl.h"
 /* readonly  extern CProxy_Reader readers;*/
 /* readonly  extern CProxy_TreeSpec treespec;*/
@@ -246,6 +248,7 @@ namespace paratreet {
         CProxy_TreeSpec treespec = CProxy_TreeSpec::ckNew();
         CProxy_Reader readers = CProxy_Reader::ckNew(n_readers, treespec);
         CProxy_ThreadStateHolder thread_state_holder = CProxy_ThreadStateHolder::ckNew();
+        //CProxy_UnionFindLib libProxy = UnionFindLib::unionFindInit(partitions, n_partitions);
 
         // Create library chares
         CProxy_TreeCanopy<Data> canopy = CProxy_TreeCanopy<Data>::ckNew();
@@ -253,7 +256,7 @@ namespace paratreet {
         CProxy_CacheManager<Data> cache = CProxy_CacheManager<Data>::ckNew();
         CProxy_Resumer<Data> resumer = CProxy_Resumer<Data>::ckNew();
 
-        CProxy_Driver<Data> driver = CProxy_Driver<Data>::ckNew(cache, resumer, canopy,readers,treespec,thread_state_holder, CkMyPe());
+        CProxy_Driver<Data> driver = CProxy_Driver<Data>::ckNew(cache, resumer, canopy,readers,treespec,thread_state_holder, /*libProxy,*/ CkMyPe());
         // Call the driver initialization routine (performs decomposition)
         auto& cfg = const_cast<paratreet::Configuration&>(paratreet::getConfiguration());
         driver.init(cb, CkReference<Configuration>(cfg));

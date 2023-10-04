@@ -45,9 +45,10 @@ struct Partition : public CBase_Partition<Data> {
   int n_readers;
 
   Partition(int, CProxy_CacheManager<Data>, CProxy_Resumer<Data>, TCHolder<Data>, CProxy_Driver<Data> driver,CProxy_Reader rdrs,
-                  CProxy_TreeSpec trsp, CProxy_ThreadStateHolder tsh, CProxy_UnionFindLib ufl,  int nr, bool);
+                  CProxy_TreeSpec trsp, CProxy_ThreadStateHolder tsh,  int nr, bool);
   Partition(CkMigrateMessage * msg){delete msg;};
 
+  void passUnionFindLib(CProxy_UnionFindLib ufl);
   template<typename Visitor> void startDown(Visitor v);
   template<typename Visitor> void startBasicDown(Visitor v);
   template<typename Visitor> void startUpAndDown(Visitor v);
@@ -115,14 +116,14 @@ Partition<Data>::Partition(
   int np, CProxy_CacheManager<Data> cm,
   CProxy_Resumer<Data> rp, TCHolder<Data> tc_holder,
   CProxy_Driver<Data> driver, CProxy_Reader rdrs,
-                  CProxy_TreeSpec trsp, CProxy_ThreadStateHolder tsh, CProxy_UnionFindLib ufl,  int nr, bool matching_decomps_
+                  CProxy_TreeSpec trsp, CProxy_ThreadStateHolder tsh/*, CProxy_UnionFindLib ufl*/,  int nr, bool matching_decomps_
   )
 {
   readers = rdrs;
   treespec = trsp;
   thread_state_holder =tsh;
   n_readers =nr;
-  libProxy = ufl;
+  //libProxy = ufl;
   this->usesAtSync = true;
   n_partitions = np;
   tc_proxy = tc_holder.proxy;
@@ -132,6 +133,13 @@ Partition<Data>::Partition(
   initLocalBranches();
   time_advanced = readers.ckLocalBranch()->start_time;
   driver.partitionLocation(this->thisIndex, CkMyPe());
+  CkPrintf("Partition %d created\n",this->thisIndex);
+}
+
+template <typename Data>
+void Partition<Data>::passUnionFindLib(CProxy_UnionFindLib ufl)
+{
+  libProxy = ufl;
 }
 
 template <typename Data>
@@ -179,8 +187,11 @@ template <typename Visitor>
 void Partition<Data>::startUpAndDown(Visitor v)
 {
   initLocalBranches();
+  CkPrintf("Got to after initLocalBranches()\n");
   traversers.emplace_back(new UpnDTraverser<Data, Visitor>(v, traversers.size(), *this,thread_state_holder));
+  CkPrintf("Got to after tranversers.emplace_back()\n");
   startNewTraverser();
+  CkPrintf("Got to after tstartNewTraverser()\n");
 }
 
 template <typename Data>
@@ -332,6 +343,11 @@ void Partition<Data>::pup(PUP::er& p)
   p | cm_proxy;
   p | r_proxy;
   p | matching_decomps;
+  p | readers;
+  p | treespec;
+  p | thread_state_holder;
+  p | libProxy;
+  p | n_readers;
   if (p.isUnpacking()) {
     initLocalBranches();
   }
@@ -444,6 +460,7 @@ template <typename Data>
 void Partition<Data>::copyParticles(std::vector<Particle>& particles, bool check_delete) {
   for (auto && leaf : leaves) {
     for (int i = 0; i < leaf->n_particles; i++) {
+      CkPrintf("Inside inner for loop i: %d\n", i);
       if (!check_delete || particle_delete_order.find(leaf->particles()[i].order) == particle_delete_order.end()) {
         particles.emplace_back(leaf->particles()[i]);
       }
@@ -482,6 +499,11 @@ void Partition<Data>::doOutput(WriterProxy w, int n_total_particles, CkCallback 
 {
   std::vector<Particle> particles;
   copyParticles(particles, false);
+
+  for(int ii; ii < particles.size();++ii)
+  {
+    CkPrintf("particles gn: %d\n", particles[ii].group_number);
+  }
 
   // sort particles into original order and sends them to writer class
   std::sort(particles.begin(), particles.end(),
@@ -529,7 +551,9 @@ void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
   for (auto && leaf : leaves) {
     n_particles_on_partition += leaf->n_particles;
   }
+
   libVertices = new unionFindVertex[n_particles_on_partition];
+
 
   int particles_so_far = 0;
   for (auto && leaf : leaves) {
@@ -547,7 +571,6 @@ void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
       particles_so_far++;
     }
   }
-
   UnionFindLib *libPtr = libProxy[this->thisIndex].ckLocal();
   libPtr->initialize_vertices(libVertices, n_particles_on_partition);
   libPtr->registerGetLocationFromID(getLocationFromID);

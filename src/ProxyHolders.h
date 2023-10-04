@@ -59,16 +59,19 @@ struct DPHolder {
 template <typename Data>
 class CProxy_CacheManager;
 
-template <typename Data>
+//class CProxy_ThreadStateHolder;
+
+/*template <typename Data>
 struct ProxyPack {
   CProxy_Driver<Data> driver;
   CProxy_Subtree<Data> subtree;
   CProxy_Partition<Data> partition;
   CProxy_CacheManager<Data> cache;
   CProxy_UnionFindLib libProxy;
+  //CProxy_ThreadStateHolder thread_state_holder;
   
-  ProxyPack(CProxy_Driver<Data> d, CProxy_Subtree<Data> s, CProxy_Partition<Data> p, CProxy_CacheManager<Data> c, CProxy_UnionFindLib u)
-    : driver(d), subtree(s), partition(p), cache(c), libProxy(u) {}
+  ProxyPack(CProxy_Driver<Data> d, CProxy_Subtree<Data> s, CProxy_Partition<Data> p, CProxy_CacheManager<Data> c, CProxy_UnionFindLib u/*, CProxy_ThreadStateHolder t)
+    : driver(d), subtree(s), partition(p), cache(c), libProxy(u)/*, thread_state_holder(t) {}
   ProxyPack() {}
   void pup(PUP::er& p) {
     p | driver;
@@ -76,8 +79,9 @@ struct ProxyPack {
     p | partition;
     p | cache;
     p | libProxy;
+    //p | thread_state_holder;
   }
-};
+};*/
 
 
 #endif // PARATREET_PROXYHOLDERS_H_

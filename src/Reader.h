@@ -97,8 +97,9 @@ void Reader::assignPartitions(int n_partitions, CProxy_Partition<Data> partition
 {
   auto sendParticles =
     [&](int dest, int n_particles, Particle* particles) {
-      for (int i = 0; i < n_particles; ++i)
-        particles[i].partition_idx = dest;
+      for (int i = 0; i < n_particles; ++i){
+        CkPrintf("Destination Index in assign Partitions is :%d\n", dest);
+        particles[i].partition_idx = dest;}
     };
   int flush_count = treespec.ckLocalBranch()->getPartitionDecomposition()->flush(particles, sendParticles);
   if (flush_count != particles.size()) {

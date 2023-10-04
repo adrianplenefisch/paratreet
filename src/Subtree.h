@@ -153,6 +153,9 @@ void Subtree<Data>::pup(PUP::er& p) {
   p | r_proxy;
   p | incoming_particles;
   p | matching_decomps;
+  p | treespec;
+  p | readers;
+  p | thread_state_holder;
 }
 
 template <typename Data>

@@ -139,8 +139,11 @@ public:
     treespec.ckLocalBranch()->getPartitionDecomposition()->setArrayOpts(partition_opts, {}, false);
     partitions = CProxy_Partition<Data>::ckNew(
       n_partitions, cache_manager, resumer, calculator,
-      this->thisProxy,readers, treespec, thread_state_holder,libProxy,n_readers, matching_decomps, partition_opts
+      this->thisProxy,readers, treespec, thread_state_holder,n_readers, matching_decomps, partition_opts
       );
+
+    libProxy = UnionFindLib::unionFindInit(partitions, n_partitions);
+    partitions.passUnionFindLib(libProxy);
     CkPrintf("Created %d Partitions: %.3lf ms\n", n_partitions,
         (CkWallTimer() - start_time) * 1000);
     // Storing partition proxy for global access for FoF
@@ -191,13 +194,19 @@ public:
     
     #ifdef FOF
     // Initialize UnionFindLib for FoF
-    libProxy = UnionFindLib::unionFindInit(partitions, n_partitions);
+    //libProxy = UnionFindLib::unionFindInit(partitions, n_partitions);
     CkPrintf("Initialized UnionFindLib with %d partitions\n", n_partitions);
     #endif // FOF
+
+    
+
   }
 
   // Core iterative loop of the simulation
   void run(CkCallback cb) {
+
+    std::cout << "Universal bounding box: " << universe << " with volume "
+      << universe.box.volume() << std::endl;
     auto& config = paratreet::getConfiguration();
     double total_time = 0;
     for (int iter = 0; iter < config.num_iterations; iter++) {
@@ -210,6 +219,17 @@ public:
       CkWaitQD();
       CkPrintf("Tree build and sending leaves: %.3lf ms\n", (CkWallTimer() - start_time) * 1000);
 
+       Particle* particles;
+      CkReductionMsg* mymsg;
+      partitions.copyParticlesCb(universe.n_particles,CkCallbackResumeThread((void*&)mymsg));
+      CkPrintf("\n");
+      particles = ((Particle*)mymsg->getData());
+    
+    for(int ii = 10000; ii<11000;++ii)
+    {
+        CkPrintf("Partition Index of %d is: %f\n",ii,(particles+ii)->partition_idx);
+    }
+
       // Meta data collections, first for max velo
       CkReductionMsg * msg, *msg2;
       subtrees.collectMetaData(CkCallbackResumeThread((void *&) msg));
@@ -221,7 +241,7 @@ public:
       Real timestep_size = paratreet::getTimestep(universe, max_velocity);
 
       #ifdef FOF
-      ProxyPack<Data> proxy_pack (this->thisProxy, subtrees, partitions, cache_manager, libProxy);
+      ProxyPack<Data> proxy_pack (this->thisProxy, subtrees, partitions, cache_manager, libProxy, thread_state_holder);
       #else
       ProxyPack<Data> proxy_pack (this->thisProxy, subtrees, partitions, cache_manager, NULL);
       #endif // FOF
@@ -244,6 +264,9 @@ public:
       start_time = CkWallTimer();
 
       paratreet::traversalFn(universe, proxy_pack, iter);
+
+      std::cout << "Universal bounding box: " << universe << " with volume "
+      << universe.box.volume() << std::endl;
 
       CkWaitQD();
 

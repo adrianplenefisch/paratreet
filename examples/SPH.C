@@ -36,9 +36,9 @@ PARATREET_REGISTER_PER_LEAF_FN(DensityFn, CentroidData, (
     }
   }));
 
-PARATREET_REGISTER_PER_LEAF_FN(ForceFn, CentroidData, CProxy_ThreadStateHolder tread_state_holder,(
-  [](SpatialNode<CentroidData>& leaf, Partition<CentroidData>* partition) {
-    auto tls = thread_state_holder.ckLocalBranch();
+PARATREET_REGISTER_PER_LEAF_FN(ForceFn, CentroidData,(
+  [this](SpatialNode<CentroidData>& leaf, Partition<CentroidData>* partition) {
+    auto tls = partition->thread_state_holder.ckLocalBranch();
 
     for (int pi = 0; pi < leaf.n_particles; pi++) {
       auto& part = leaf.particles()[pi];
@@ -91,12 +91,12 @@ PARATREET_REGISTER_PER_LEAF_FN(ForceFn, CentroidData, CProxy_ThreadStateHolder t
     CkWaitQD();
     start_time = CkWallTimer();
     proxy_pack.partition.callPerLeafFn(
-      PARATREET_PER_LEAF_FN(ForceFn, CentroidData, thread_state_holder),  // calculates pressure
+      PARATREET_PER_LEAF_FN(ForceFn, CentroidData),  // calculates pressure
       CkCallbackResumeThread()
     );
     CkPrintf("Pressure calculations: %.3lf ms\n", (CkWallTimer() - start_time) * 1000);
     start_time = CkWallTimer();
-    thread_state_holder.applyAccumulatedOpposingEffects<CentroidData>(proxy_pack.partition);
+    proxy_pack.thread_state_holder.applyAccumulatedOpposingEffects<CentroidData>(proxy_pack.partition);
     CkWaitQD();
     CkPrintf("Averaging pressures: %.3lf ms\n", (CkWallTimer() - start_time) * 1000);
   }

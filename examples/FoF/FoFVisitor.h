@@ -17,21 +17,23 @@ extern Real linkingLength;
 extern Vector3D<Real> fPeriod;
 
 class FoFVisitor {
-  CProxy_UnionFindLib libProxy;
+  
 
 private:
+  CProxy_UnionFindLib libProxy;
   Vector3D<Real> offset;
 public:
   static constexpr const bool CallSelfLeaf = true;
-  FoFVisitor(CProxy_UnionFindLib lbpx) : offset(0, 0, 0) {libProxy = lbpx;}
-  FoFVisitor(Vector3D<Real> offseti, CProxy_UnionFindLib lbpx) : offset(offseti) {libProxy = lbpx;}
+  FoFVisitor() : offset(0, 0, 0) {}
+  FoFVisitor(CProxy_UnionFindLib lbpx) : offset(0, 0, 0), libProxy(lbpx) {}
+  FoFVisitor(Vector3D<Real> offseti, CProxy_UnionFindLib lbpx) : offset(offseti), libProxy(lbpx) {}
 
 
   void pup(PUP::er& p) {
     p | offset;
-    p | libProxy;
+    //p | libProxy;
   }
-
+  
 
   bool open(const SpatialNode<CentroidData>& source, SpatialNode<CentroidData>& target) {
     Real r_bucket = target.data.size_sm + linkingLength;

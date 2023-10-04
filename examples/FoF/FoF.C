@@ -157,7 +157,7 @@ class FoF : public paratreet::Main<CentroidData> {
   }
 
   void traversalFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) override {
-    
+    CkPrintf("Got inside traversalFn\n");
     //only need to look at cubes that are almost touching (N=1)
     if(!periodic)
     {
@@ -175,6 +175,7 @@ class FoF : public paratreet::Main<CentroidData> {
         }
       }
     }
+    CkPrintf("Got to after FoFVisitor stuff\n");
     double start_time = CkWallTimer();
     proxy_pack.partition.template startUpAndDown<DensityVisitor>(DensityVisitor());
     CkWaitQD();
@@ -227,17 +228,18 @@ class FoF : public paratreet::Main<CentroidData> {
     CkPrintf("[Main] Components pruned and labeled. Outputting results of friends-of-friends\n");
     CkPrintf("[Main] Component labeling time: %f\n", CkWallTimer() - startTime);
     startTime = CkWallTimer();
+    
     paratreet::outputParticleAccelerations(universe, partitionProxy);
-
-    /*Particle* particles;
+    /*
+    Particle* particles;
     CkReductionMsg* mymsg;
     partitionProxy.copyParticlesCb(universe.n_particles,CkCallbackResumeThread((void*&)mymsg));
     CkPrintf("\n");
-    particles = ((Particle*)mymsg->getData());*/
+    particles = ((Particle*)mymsg->getData());
     
-    /*for(int ii = 0; ii<1000;++ii)
+    for(int ii = 0; ii<1000;++ii)
     {
-        CkPrintf("Group number of %d is: %f\n",ii,(particles+ii)->density);
+        CkPrintf("Group number of %d is: %f\n",ii,(particles+ii)->group_number);
     }*/
     
     //CkPrintf("Group number of second is: %d/n",particles[1].group_number);

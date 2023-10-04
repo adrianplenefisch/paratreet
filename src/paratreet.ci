@@ -83,7 +83,7 @@ module paratreet {
 
   template <typename Data>
   array [1d] Partition {
-    entry Partition(int, CProxy_CacheManager<Data>, CProxy_Resumer<Data>, TCHolder<Data>, CProxy_Driver<Data> driver,CProxy_Reader rdrs,CProxy_TreeSpec trsp, CProxy_ThreadStateHolder tsh, CProxy_UnionFindLib ufl,  int nr, bool);
+    entry Partition(int, CProxy_CacheManager<Data>, CProxy_Resumer<Data>, TCHolder<Data>, CProxy_Driver<Data> driver,CProxy_Reader rdrs,CProxy_TreeSpec trsp, CProxy_ThreadStateHolder tsh,  int nr, bool);
     template <typename Visitor> entry void startDown(Visitor v);
     template <typename Visitor> entry void startBasicDown(Visitor v);
     template <typename Visitor> entry void startUpAndDown(Visitor v);
@@ -94,6 +94,7 @@ module paratreet {
     entry void makeLeaves(int);
     entry void destroy();
     entry void reset();
+    entry void passUnionFindLib(CProxy_UnionFindLib ufl);
     entry void kick(Real, CkCallback cb);
     entry void perturb(Real, CkCallback cb);
     entry void rebuild(BoundingBox, TPHolder<Data>, bool);
