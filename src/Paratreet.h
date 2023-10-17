@@ -61,23 +61,22 @@ struct StartMessage : CMessage_StartMessage
     int argc;
     char** argv;
     bool useInputFile;
+    std::vector<Particle> passed_particles;
     StartMessage(int c, char** v, bool useInputFile) {
         argc = c;
         argv = v;
         useInputFile = useInputFile;
+        
+    }
+    StartMessage(int c, char** v, bool useInputFile, std::vector<Particle> passed_p) {
+        argc = c;
+        argv = v;
+        useInputFile = useInputFile;
+        passed_particles = passed_p;
     }
 };
 
-class NewMain: public CBase_NewMain {
-  public:
-    /*static CProxy_Reader readers;
-    static CProxy_TreeSpec treespec;
-    static CProxy_ThreadStateHolder thread_state_holder;
-    static int n_readers;*/
-    NewMain();
-    void start(StartMessage* m);
-    void run();
-};
+
 
 class MainChare: public CBase_MainChare {
   public:
@@ -85,6 +84,7 @@ class MainChare: public CBase_MainChare {
 };
 
 namespace paratreet {
+
 
     template<typename Data>
     CProxy_Driver<Data> initialize(const CkCallback& cb);
@@ -284,5 +284,20 @@ namespace paratreet {
         tw[0].write(0, CkCallbackResumeThread());
     }
 }
+
+class NewMain: public CBase_NewMain {
+  public:
+
+
+    
+
+    /*static CProxy_Reader readers;
+    static CProxy_TreeSpec treespec;
+    static CProxy_ThreadStateHolder thread_state_holder;
+    static int n_readers;*/
+    NewMain(StartMessage* mm);
+    void start(StartMessage* m);
+    void run();
+};
 
 #endif

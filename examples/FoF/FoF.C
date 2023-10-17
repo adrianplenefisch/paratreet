@@ -14,7 +14,7 @@
 
 /* readonly */ bool outputFileConfigured;
 /* readonly  CProxy_UnionFindLib libProxy;*/
-/* readonly */ CProxy_Partition<CentroidData> partitionProxy;
+/* readonly  CProxy_Partition<CentroidData> partitionProxy;*/
 /* readonly */ int peanoKey;
 /* readonly */ Real linkingLength;
 /* readonly */ int minVerticesPerComponent; // minimum is strictly greater than this value
@@ -57,9 +57,12 @@ static void initialize() {
 class FoF : public paratreet::Main<CentroidData> {
 
   CProxy_UnionFindLib libProxy;
+  CProxy_Partition<CentroidData> partitionProxy;
+  CkArgMsg* mmsg;
   
   void main(CkArgMsg* m) override {
     // Initialize readonly variables
+    mmsg = m;
     if (conf.input_file.empty()) 
       CkPrintf("warning: no input file provided\n");
     CkAssert(!conf.input_file.empty());
@@ -105,7 +108,7 @@ class FoF : public paratreet::Main<CentroidData> {
           CkExit();
       }
     }
-    delete m;
+    //delete m;
 
     // Print configuration
     CkPrintf("\n[PARATREET]\n");
@@ -154,6 +157,9 @@ class FoF : public paratreet::Main<CentroidData> {
     // Store proxies as global variables for access
     libProxy = proxy_pack.libProxy;
     partitionProxy = proxy_pack.partition;
+
+    libProxy[0].ckLocal();
+
   }
 
   void traversalFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) override {
@@ -190,22 +196,9 @@ class FoF : public paratreet::Main<CentroidData> {
     CkPrintf("Density calculations and sharing: %.3lf ms\n", (CkWallTimer() - start_time) * 1000);
 
     proxy_pack.partition.template startDown<subsetVisitor>(subsetVisitor(Vector3D<Real> (0,0,0)));
-    CProxy_subsetCreator::ckNew();
+    //CProxy_subsetCreator::ckNew();
 
-    /*int argcnew = 14;
-    char* argvnew[14] = {"./FoFApp", "-f", "cube300.000128", "-v", "cube300.000128", "-pbc", "-px", "1", "-py", "1", "-pz", "1", "-ll", "0.00417"}; 
-    
-    for(int iii=0; iii<argcnew;++iii)
-    {
-      CkPrintf("New:    %s\n",argvnew[iii]);
-    }
-
-    CkPrintf("%s\n", argvnew[2]);
-
-    CkArgMsg* mm = new CkArgMsg(); 
-    mm->argc = argcnew;
-    mm->argv = argvnew;
-    CProxy_MainChare::ckNew(mm,0);*/
+   
 
   }
 
@@ -259,6 +252,12 @@ class FoF : public paratreet::Main<CentroidData> {
       CkCallbackResumeThread()
     );
     CkWaitQD();*/
+
+    CkPrintf("Attempting to run subsetCreator functions. \n");
+    subsetCreator subset_creator = subsetCreator();
+    subset_creator.createSubsets(partitionProxy,universe.n_particles);
+    subset_creator.runSubsets(mmsg);
+
   }
   
   Real getTimestep(BoundingBox& universe, Real max_velocity) override {

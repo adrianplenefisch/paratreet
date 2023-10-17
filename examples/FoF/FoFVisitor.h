@@ -31,7 +31,7 @@ public:
 
   void pup(PUP::er& p) {
     p | offset;
-    //p | libProxy;
+    p | libProxy;
   }
   
 

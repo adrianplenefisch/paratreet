@@ -8,7 +8,7 @@ CHARMC = $(CHARM_HOME)/bin/charmc $(OPTS)
 
 all: Gravity SPH Collision
 DATA = CentroidData.h MultipoleMoments.h
-VISITORS = DensityVisitor.h PressureVisitor.h GravityVisitor.h CollisionVisitor.h
+VISITORS = DensityVisitor.h PressureVisitor.h GravityVisitor.h CollisionVisitor.h subsetVisitor.h
 
 debug:
 	echo $(LB_LIBS)
@@ -37,19 +37,19 @@ Collision.o: Collision.C Main.decl.h
 SPH.o: SPH.C SPHUtils.h Main.decl.h
 	$(CHARMC) -c $<
 
-Main.o: Main.C $(VISITORS) Main.decl.h
+Main.o: Main.C $(VISITORS) Main.decl.h ./subsetCreator.h
 	$(CHARMC) -c $<
 
 moments.o: moments.C
 	$(CHARMC) -c $<
 
-FoF.decl.h: ./FoF/FoF.ci $(DATA)
+FoF.decl.h: ./FoF/FoF.ci $(DATA) ./subsetCreator.h
 	$(CHARMC) $<
 
 FoFApp: FoF.decl.h FoF.o ../src/libparatreet.a moments.o
 	$(CHARMC) -DFOF -language charm++ $(LB_LIBS) -o FoFApp FoF.o moments.o $(LD_LIBS)
 
-FoF.o: ./FoF/FoF.C ./FoF.decl.h ./FoF/FoFVisitor.h subsetVisitor.h
+FoF.o: ./FoF/FoF.C ./FoF.decl.h ./FoF/FoFVisitor.h ./subsetVisitor.h ./subsetCreator.h
 	$(CHARMC) -DFOF -c $<
 
 test: all

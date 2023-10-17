@@ -219,7 +219,7 @@ public:
       CkWaitQD();
       CkPrintf("Tree build and sending leaves: %.3lf ms\n", (CkWallTimer() - start_time) * 1000);
 
-       Particle* particles;
+       /*Particle* particles;
       CkReductionMsg* mymsg;
       partitions.copyParticlesCb(universe.n_particles,CkCallbackResumeThread((void*&)mymsg));
       CkPrintf("\n");
@@ -228,7 +228,7 @@ public:
     for(int ii = 10000; ii<11000;++ii)
     {
         CkPrintf("Partition Index of %d is: %f\n",ii,(particles+ii)->partition_idx);
-    }
+    }*/
 
       // Meta data collections, first for max velo
       CkReductionMsg * msg, *msg2;

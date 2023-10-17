@@ -3,7 +3,7 @@ mainmodule FoF {
     extern module unionFindLib;
     readonly bool outputFileConfigured;
     //readonly CProxy_UnionFindLib libProxy;
-    readonly CProxy_Partition<CentroidData> partitionProxy;
+    //readonly CProxy_Partition<CentroidData> partitionProxy;
     readonly int peanoKey;
     readonly Real linkingLength;
     readonly int periodic;
@@ -16,8 +16,8 @@ mainmodule FoF {
     extern entry void Partition<CentroidData> startUpAndDown<DensityVisitor> (DensityVisitor v);
     extern entry void Partition<CentroidData> startDown<subsetVisitor> (subsetVisitor v);
 
-    chare subsetCreator {
+    //chare subsetCreator {
 
-        entry subsetCreator();
-    };
+    //    entry subsetCreator();
+    //};
 }

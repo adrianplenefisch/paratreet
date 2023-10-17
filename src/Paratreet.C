@@ -21,13 +21,14 @@ using namespace paratreet;
 
 MainChare::MainChare(CkArgMsg* m)
 {
-    CProxy_NewMain firstmain = CProxy_NewMain::ckNew();
     StartMessage* mm = new StartMessage(m->argc, m->argv,true);
-    firstmain.start(mm);
+    CProxy_NewMain firstmain = CProxy_NewMain::ckNew(mm);
+    
+    
 }
 
-NewMain::NewMain() {
-    /*auto& main = CsvAccess(main_);
+NewMain::NewMain(StartMessage* mm) {
+    /*auto& main = main_;
 
     main->setDefaults();
     (main->configuration()).parse(argc, argv);
@@ -38,6 +39,7 @@ NewMain::NewMain() {
 
     CkCallback runCB(CkIndex_NewMain::run(), thisProxy);
     main->initializeDriver(runCB);*/
+    start(mm);
 }
 
 void NewMain::start(StartMessage* m)
@@ -78,6 +80,8 @@ namespace paratreet {
 
     CsvDeclare(registration_list_type_, registration_list_);
     CsvDeclare(main_type_, main_);
+
+    //main_type_ main_;
 
     std::intptr_t __addRegistrationFn(const registration_fn_& fn, const char* name) {
         auto& list = *(&CsvAccess(registration_list_));

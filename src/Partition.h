@@ -460,7 +460,6 @@ template <typename Data>
 void Partition<Data>::copyParticles(std::vector<Particle>& particles, bool check_delete) {
   for (auto && leaf : leaves) {
     for (int i = 0; i < leaf->n_particles; i++) {
-      CkPrintf("Inside inner for loop i: %d\n", i);
       if (!check_delete || particle_delete_order.find(leaf->particles()[i].order) == particle_delete_order.end()) {
         particles.emplace_back(leaf->particles()[i]);
       }
@@ -500,10 +499,10 @@ void Partition<Data>::doOutput(WriterProxy w, int n_total_particles, CkCallback 
   std::vector<Particle> particles;
   copyParticles(particles, false);
 
-  for(int ii; ii < particles.size();++ii)
+  /*for(int ii; ii < particles.size();++ii)
   {
     CkPrintf("particles gn: %d\n", particles[ii].group_number);
-  }
+  }*/
 
   // sort particles into original order and sends them to writer class
   std::sort(particles.begin(), particles.end(),

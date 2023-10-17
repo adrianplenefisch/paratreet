@@ -22,21 +22,17 @@ private:
 public:
   static bool open(const SpatialNode<CentroidData>& source, SpatialNode<CentroidData>& target) {
     // Check if any of the target balls intersect the source volume
-    CkPrintf("Started Density Visitor open\n");
     for (int i = 0; i < target.n_particles; i++) {
       if (target.data.pps[i].neighbors.size() < k) return true;
       if(Space::intersect(source.data.box, target.particles()[i].position, target.data.pps[i].neighbors[0].fKey))
-        CkPrintf("Finished Density Visitor open\n");
         return true;
     }
-    CkPrintf("Finished Density Visitor open\n");
     return false;
   }
 
   static void node(const SpatialNode<CentroidData>& source, SpatialNode<CentroidData>& target) {}
 
   static void leaf(const SpatialNode<CentroidData>& source, SpatialNode<CentroidData>& target) {
-    CkPrintf("Started Density Visitor Leaf\n");
     for (int i = 0; i < target.n_particles; i++) {
       auto& Q = target.data.pps[i].neighbors;
       for (int j = 0; j < source.n_particles; j++) {
@@ -60,7 +56,6 @@ public:
         }
       }
     }
-    CkPrintf("Finished Density Visitor Leaf\n");
   }
 };
 

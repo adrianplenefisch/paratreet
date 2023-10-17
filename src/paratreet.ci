@@ -207,7 +207,7 @@ module paratreet {
     //readonly CProxy_TreeSpec treespec;
     //readonly CProxy_ThreadStateHolder thread_state_holder;
     //readonly int n_readers;
-    entry [nokeep] NewMain();
+    entry [nokeep] NewMain(StartMessage* mm);
     entry [nokeep] void start(StartMessage* m);
     entry [threaded] void run();
     
