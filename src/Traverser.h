@@ -113,11 +113,13 @@ protected:
   }
 
 public:
-  TransposedDownTraverser(Visitor& vi, size_t ti, std::vector<Node<Data>*> leavesi, Partition<Data>& parti, CProxy_ThreadStateHolder thread_state_holder, bool delay_leafi = false)
+  TransposedDownTraverser(Visitor& vi, size_t ti, std::vector<Node<Data>*> leavesi, Partition<Data>& parti, CProxy_ThreadStateHolder thread_state_holder, CProxy_NewMain new_main, bool delay_leafi = false)
     : v(vi), trav_idx(ti), leaves(leavesi), part(parti), delay_leaf(delay_leafi)
   {
+    CkReductionMsg* mymsg;
 
-    request_pause_interval = paratreet::getConfiguration().request_pause_interval;
+    new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
+    request_pause_interval = ((paratreet::Configuration*)mymsg->getData())->request_pause_interval;
     stats = thread_state_holder.ckLocalBranch();
     if (delay_leaf) interactions.resize(leaves.size());
   }
@@ -234,6 +236,7 @@ protected:
   std::vector<Node<Data>*> leaves;
   Partition<Data>& part;
   ThreadStateHolder* stats = nullptr;
+  CProxy_NewMain new_main;
   std::unordered_map<Key, std::vector<int>> curr_nodes;
   int num_requested = 0;
   int saved_start_idx = 0;
@@ -252,11 +255,16 @@ protected:
   }
 
 public:
-  BasicDownTraverser(Visitor& vi, size_t ti, std::vector<Node<Data>*> leavesi, Partition<Data>& parti, CProxy_ThreadStateHolder thread_state_holder, bool delay_leafi = false)
+  BasicDownTraverser(Visitor& vi, size_t ti, std::vector<Node<Data>*> leavesi, Partition<Data>& parti, CProxy_ThreadStateHolder thread_state_holder, CProxy_NewMain nm, bool delay_leafi = false)
     : v(vi), trav_idx(ti), leaves(leavesi), part(parti), delay_leaf(delay_leafi)
   {
-    request_pause_interval = paratreet::getConfiguration().request_pause_interval;
-    auto iter_pause_interval = paratreet::getConfiguration().iter_pause_interval;
+    new_main = nm;
+    CkReductionMsg* mymsg;
+
+    new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
+    paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
+    request_pause_interval = config->request_pause_interval;
+    auto iter_pause_interval = config->iter_pause_interval;
     next_stop_index += iter_pause_interval > 0 ? iter_pause_interval : leaves.size();
     if (delay_leaf) interactions.resize(leaves.size());
     stats = thread_state_holder.ckLocalBranch();
@@ -277,7 +285,10 @@ public:
   virtual bool wantsPause() const override {return saved_start_idx > next_stop_index || num_requested > request_pause_interval;}
   virtual void resumeAfterPause() override {
     num_requested = 0;
-    auto iter_pause_interval = paratreet::getConfiguration().iter_pause_interval;
+    CkReductionMsg* mymsg;
+
+    new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
+    auto iter_pause_interval = ((paratreet::Configuration*)mymsg->getData())->iter_pause_interval;
     next_stop_index += iter_pause_interval > 0 ? iter_pause_interval : leaves.size();
     startTrav();
   }

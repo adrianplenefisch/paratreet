@@ -15,7 +15,7 @@ template<typename T>
 class SpatialNode;
 
 namespace paratreet {
-    inline Real getTimestep(BoundingBox& box, Real real);
+    /*inline Real getTimestep(BoundingBox& box, Real real);
 
     template<typename T>
     inline void preTraversalFn(ProxyPack<T>& pack);
@@ -24,7 +24,7 @@ namespace paratreet {
     inline void traversalFn(BoundingBox& box, ProxyPack<T>& pack, int iter);
 
     template<typename T>
-    inline void postIterationFn(BoundingBox& box, ProxyPack<T>& pack, int iter);
+    inline void postIterationFn(BoundingBox& box, ProxyPack<T>& pack, int iter);*/
 
     template<typename T>
     class PerLeafAble: public PUP::able {

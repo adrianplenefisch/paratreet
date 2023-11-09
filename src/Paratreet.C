@@ -11,6 +11,7 @@
 #include "Utility.h"
 #include "CacheManager.h"
 #include "Resumer.h"
+#include "NewMain.h"
 
 /* readonly  CProxy_Reader readers;*/
 /* readonly  CProxy_TreeSpec treespec;*/
@@ -22,64 +23,19 @@ using namespace paratreet;
 MainChare::MainChare(CkArgMsg* m)
 {
     StartMessage* mm = new StartMessage(m->argc, m->argv,true);
-    CProxy_NewMain firstmain = CProxy_NewMain::ckNew(mm);
+    CProxy_NewMain firstmain = CProxy_NewMain::ckNew(mm,1);
     
     
 }
 
-NewMain::NewMain(StartMessage* mm) {
-    /*auto& main = main_;
 
-    main->setDefaults();
-    (main->configuration()).parse(argc, argv);
-    CkArgMsg* mm = new CkArgMsg(); 
-    mm->argc = argc;
-    mm->argv = argv;
-    main->main(mm);
 
-    CkCallback runCB(CkIndex_NewMain::run(), thisProxy);
-    main->initializeDriver(runCB);*/
-    start(mm);
-}
 
-void NewMain::start(StartMessage* m)
-{
-    auto& main = CsvAccess(main_);
-    if(m->useInputFile)
-    {
-        main->setDefaults();
-        (main->configuration()).parse(m->argc, m->argv);
-        CkArgMsg* mm = new CkArgMsg(); 
-        mm->argc = m->argc;
-        mm->argv = m->argv;
-        main->main(mm);
-
-        CkCallback runCB(CkIndex_NewMain::run(), thisProxy);
-        main->initializeDriver(runCB);
-    }
-    else
-    {
-        main->setDefaults();
-        (main->configuration()).parse(m->argc, m->argv);
-        CkArgMsg* mm = new CkArgMsg(); 
-        mm->argc = m->argc;
-        mm->argv = m->argv;
-        main->main(mm);
-
-        CkCallback runCB(CkIndex_NewMain::run(), thisProxy);
-        main->initializeDriver(runCB);
-    }
-    
-}
-
-void NewMain::run() {
-    CsvAccess(main_)->run();
-}
 
 namespace paratreet {
 
     CsvDeclare(registration_list_type_, registration_list_);
-    CsvDeclare(main_type_, main_);
+    //CsvDeclare(main_type_, main_);
 
     //main_type_ main_;
 
@@ -91,3 +47,4 @@ namespace paratreet {
 }
 
 #include "paratreet.def.h"
+

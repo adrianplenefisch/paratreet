@@ -42,10 +42,11 @@ struct Partition : public CBase_Partition<Data> {
   CProxy_TreeSpec treespec;
   CProxy_ThreadStateHolder thread_state_holder;
   CProxy_UnionFindLib libProxy;
+  CProxy_NewMain new_main;
   int n_readers;
 
   Partition(int, CProxy_CacheManager<Data>, CProxy_Resumer<Data>, TCHolder<Data>, CProxy_Driver<Data> driver,CProxy_Reader rdrs,
-                  CProxy_TreeSpec trsp, CProxy_ThreadStateHolder tsh,  int nr, bool);
+                  CProxy_TreeSpec trsp, CProxy_ThreadStateHolder tsh, CProxy_NewMain nm,  int nr, bool);
   Partition(CkMigrateMessage * msg){delete msg;};
 
   void passUnionFindLib(CProxy_UnionFindLib ufl);
@@ -116,7 +117,7 @@ Partition<Data>::Partition(
   int np, CProxy_CacheManager<Data> cm,
   CProxy_Resumer<Data> rp, TCHolder<Data> tc_holder,
   CProxy_Driver<Data> driver, CProxy_Reader rdrs,
-                  CProxy_TreeSpec trsp, CProxy_ThreadStateHolder tsh/*, CProxy_UnionFindLib ufl*/,  int nr, bool matching_decomps_
+                  CProxy_TreeSpec trsp, CProxy_ThreadStateHolder tsh, CProxy_NewMain nm,  int nr, bool matching_decomps_
   )
 {
   readers = rdrs;
@@ -130,6 +131,7 @@ Partition<Data>::Partition(
   r_proxy = rp;
   cm_proxy = cm;
   matching_decomps = matching_decomps_;
+  new_main = nm;
   initLocalBranches();
   time_advanced = readers.ckLocalBranch()->start_time;
   driver.partitionLocation(this->thisIndex, CkMyPe());
@@ -159,7 +161,7 @@ template <typename Visitor>
 void Partition<Data>::startDown(Visitor v)
 {
   initLocalBranches();
-  traversers.emplace_back(new TransposedDownTraverser<Data, Visitor>(v, traversers.size(), leaves, *this, thread_state_holder));
+  traversers.emplace_back(new TransposedDownTraverser<Data, Visitor>(v, traversers.size(), leaves, *this, thread_state_holder,new_main));
   startNewTraverser();
 }
 
@@ -178,7 +180,7 @@ template <typename Visitor>
 void Partition<Data>::startBasicDown(Visitor v)
 {
   initLocalBranches();
-  traversers.emplace_back(new BasicDownTraverser<Data, Visitor>(v, traversers.size(), leaves, *this,thread_state_holder));
+  traversers.emplace_back(new BasicDownTraverser<Data, Visitor>(v, traversers.size(), leaves, *this,thread_state_holder,new_main));
   startNewTraverser();
 }
 
@@ -348,6 +350,7 @@ void Partition<Data>::pup(PUP::er& p)
   p | thread_state_holder;
   p | libProxy;
   p | n_readers;
+  p | new_main;
   if (p.isUnpacking()) {
     initLocalBranches();
   }
@@ -450,7 +453,7 @@ template <typename Data>
 void Partition<Data>::callPerLeafFn(paratreet::PerLeafAble<Data>& perLeafFn, const CkCallback& cb)
 {
   for (auto && leaf : leaves) {
-    perLeafFn(*leaf, this);
+    new_main.perLeafFn(0,*leaf, this->thisProxy);
   }
 
   this->contribute(cb);

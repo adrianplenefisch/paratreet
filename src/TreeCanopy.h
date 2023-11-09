@@ -2,6 +2,7 @@
 #define PARATREET_TREECANOPY_H_
 
 #include "paratreet.decl.h"
+#include "NewMain.h"
 #include "templates.h"
 #include "Node.h"
 #include "CacheManager.h"

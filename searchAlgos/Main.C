@@ -2,6 +2,7 @@
 
 #include "CountVisitor.h"
 #include "VisitAllVisitor.h"
+#include "NewMain.h"
 
 PARATREET_REGISTER_MAIN(ExMain);
 

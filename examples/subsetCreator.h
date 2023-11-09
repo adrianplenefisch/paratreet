@@ -58,7 +58,7 @@ public:
         for(int i = 0; i<5;++i)
         {
             StartMessage* mm = new StartMessage(m->argc, m->argv,true, toSend[i]);
-            CProxy_NewMain firstmain = CProxy_NewMain::ckNew(mm);
+            CProxy_NewMain firstmain = CProxy_NewMain::ckNew(mm,1);
             
         }
     }

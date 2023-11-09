@@ -192,6 +192,7 @@ namespace paratreet {
             p | dSoft;
             p | linking_length;
         }
+        virtual ~Configuration() { }
     };
 
     // workaround to enable custom configuration types
@@ -203,6 +204,8 @@ namespace paratreet {
       DefaultConfiguration(CkMigrateMessage* m) : Configuration(m) {}
       PUPable_decl_inside(DefaultConfiguration);
     };
+
+    //override DefaultConfiguration
 
     static std::string asString(TreeType t) {
       switch (t) {
@@ -251,10 +254,10 @@ namespace paratreet {
       }
     }
 
-    template<typename T = Configuration>
-    inline const T& getConfiguration(void);
+    //template<typename T = Configuration>
+    //inline const T& getConfiguration(void);
 
-    inline void setConfiguration(std::shared_ptr<Configuration>&&);
+    //inline void setConfiguration(std::shared_ptr<Configuration>&&);
 }
 
 #endif //PARATREET_CONFIGURATION_H_

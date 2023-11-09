@@ -16,7 +16,7 @@ debug:
 Main.decl.h: Main.ci $(DATA)
 	$(CHARMC) $<
 
-Gravity: Main.decl.h Main.o Gravity.o Ewald.o moments.o ../src/libparatreet.a
+Gravity: Main.decl.h Main.o Gravity.o Ewald.o moments.o ../src/libparatreet.a 
 	$(CHARMC) -language charm++ $(LB_LIBS) -o Gravity Gravity.o Ewald.o moments.o Main.o $(LD_LIBS)
 
 Collision: Main.decl.h Main.o Collision.o moments.o Ewald.o ../src/libparatreet.a
@@ -25,7 +25,7 @@ Collision: Main.decl.h Main.o Collision.o moments.o Ewald.o ../src/libparatreet.
 SPH: Main.decl.h Main.o SPH.o moments.o Ewald.o ../src/libparatreet.a
 	$(CHARMC) -language charm++ $(LB_LIBS) -o SPH SPH.o Main.o moments.o Ewald.o $(LD_LIBS)
 
-Gravity.o: Gravity.C Main.decl.h
+Gravity.o: Gravity.C Main.decl.h ../src/NewMain.h ../src/NewMain.C
 	$(CHARMC) -c $<
 
 Ewald.o: Ewald.C Main.decl.h
@@ -43,13 +43,13 @@ Main.o: Main.C $(VISITORS) Main.decl.h ./subsetCreator.h
 moments.o: moments.C
 	$(CHARMC) -c $<
 
-FoF.decl.h: ./FoF/FoF.ci $(DATA) ./subsetCreator.h
+FoF.decl.h: ./FoF/FoF.ci $(DATA) ./subsetCreator.h ../src/Configuration.h
 	$(CHARMC) $<
 
-FoFApp: FoF.decl.h FoF.o ../src/libparatreet.a moments.o
+FoFApp: FoF.decl.h ../src/Configuration.h FoF.o ../src/libparatreet.a moments.o
 	$(CHARMC) -DFOF -language charm++ $(LB_LIBS) -o FoFApp FoF.o moments.o $(LD_LIBS)
 
-FoF.o: ./FoF/FoF.C ./FoF.decl.h ./FoF/FoFVisitor.h ./subsetVisitor.h ./subsetCreator.h
+FoF.o: ./FoF/FoF.C ./FoF.decl.h ./FoF/FoFVisitor.h ./subsetVisitor.h ./subsetCreator.h ../src/Configuration.h
 	$(CHARMC) -DFOF -c $<
 
 test: all

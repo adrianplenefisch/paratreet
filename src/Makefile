@@ -4,11 +4,11 @@ include Makefile.common
 OPTS = -g -Ofast $(INCLUDES) -DDEBUG=0 $(MAKE_OPTS) -DFOF
 CHARMC = $(CHARM_HOME)/bin/charmc $(OPTS)
 
-OBJS = Paratreet.o Loadable.o Reader.o Writer.o Particle.o BoundingBox.o Decomposition.o Modularization.o TreeSpec.o ThreadStateHolder.o
+OBJS = Paratreet.o Loadable.o Reader.o Writer.o Particle.o BoundingBox.o Decomposition.o Modularization.o NewMain.o TreeSpec.o ThreadStateHolder.o
 TIPSY_OBJS = NChilReader.o SS.o TipsyFile.o TipsyReader.o hilbert.o
 
 UTILITY_HEADERS = common.h Utility.h $(STRUCTURE_PATH)/Vector3D.h $(STRUCTURE_PATH)/SFC.h
-CORE_HEADERS = BoundingBox.h BufferedVec.h MultiData.h Node.h NodeWrapper.h ParticleMsg.h Splitter.h ProxyPackSeparate.h
+CORE_HEADERS = BoundingBox.h BufferedVec.h MultiData.h Node.h NodeWrapper.h ParticleMsg.h Splitter.h ProxyPackSeparate.h NewMain.h
 IMPL_HEADERS = CacheManager.h Configuration.h Driver.h Partition.h Reader.h Resumer.h Splitter.h Subtree.h Traverser.h TreeCanopy.h
 
 LBS = PrefixLB OrbLB #AverageSmoothLB DiffusionLB DistributedPrefixLB DistributedOrbLB
@@ -26,7 +26,7 @@ paratreet.decl.h: paratreet.ci
 	$(CHARMC) $<
 
 Paratreet.o: $(UTILITY_HEADERS) $(CORE_HEADERS) $(IMPL_HEADERS) paratreet.decl.h
-	$(CHARMC) -c Paratreet.C
+	$(CHARMC) -c Paratreet.C NewMain.C
 
 %.o: %.C %.h paratreet.decl.h
 	$(CHARMC) -c $<

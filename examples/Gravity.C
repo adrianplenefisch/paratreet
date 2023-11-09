@@ -17,7 +17,7 @@ extern CProxy_EwaldData ewaldProxy;
 
   using namespace paratreet;
 
-  void ExMain::preTraversalFn(ProxyPack<CentroidData>& proxy_pack) {
+  void ExMain::preTraversalFn(ProxyPack<CentroidData> proxy_pack) {
     //proxy_pack.cache.startParentPrefetch(this->thisProxy, CkCallback::ignore); // MUST USE FOR UPND TRAVS
     //proxy_pack.cache.template startPrefetch<GravityVisitor>(this->thisProxy, CkCallback::ignore);
     proxy_pack.driver.loadCache(CkCallbackResumeThread());
@@ -26,7 +26,7 @@ extern CProxy_EwaldData ewaldProxy;
     }
   }
 
-  void ExMain::traversalFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) {
+  void ExMain::traversalFn(BoundingBox universe, ProxyPack<CentroidData> proxy_pack, int iter) {
     if (dual_tree && periodic) CkAbort("Not sure about this -- dual_tree and periodic both set");
     if (dual_tree) proxy_pack.subtree.startDual<GravityVisitor>(GravityVisitor(Vector3D<Real>(0, 0, 0), theta));
     if (!periodic) {
@@ -51,9 +51,9 @@ extern CProxy_EwaldData ewaldProxy;
     }
   }
 
-  void ExMain::postIterationFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) {
+  void ExMain::postIterationFn(BoundingBox universe, ProxyPack<CentroidData> proxy_pack, int iter) {
     if (iter == 0 && verify) {
-      paratreet::outputParticleAccelerations(universe, proxy_pack.partition);
+      //new_main.outputParticleAccelerations(universe, proxy_pack.partition);
     }
     else if (periodic) {
       // do ewald

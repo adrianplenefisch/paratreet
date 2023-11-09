@@ -6,8 +6,9 @@
 #include "CollisionVisitor.h"
 #include "EwaldData.h"
 #include "unionFindLib.h"
+#include "NewMain.h"
 
-PARATREET_REGISTER_MAIN(ExMain);
+//PARATREET_REGISTER_MAIN(ExMain);
 
 /* readonly */ bool verify;
 /* readonly */ bool dual_tree;

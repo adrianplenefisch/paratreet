@@ -59,6 +59,9 @@ struct DPHolder {
 template <typename Data>
 class CProxy_CacheManager;
 
+
+class CProxy_NewMain;
+
 //class CProxy_ThreadStateHolder;
 
 /*template <typename Data>

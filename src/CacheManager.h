@@ -4,7 +4,7 @@
 #include "paratreet.decl.h"
 #include "common.h"
 #include "Utility.h"
-#include "templates.h"
+//#include "templates.h"
 #include "MultiData.h"
 
 #include <map>
@@ -89,17 +89,22 @@ public:
   std::vector<std::vector<Node<Data>*>> displaced_leaves; // leaves split between >1 Partitions
   std::vector<std::unique_ptr<NodePool<Data>>> pools;
   CProxy_Resumer<Data> r_proxy;
+  CProxy_NewMain new_main;
   Data nodewide_data;
 
-  CacheManager() { }
+  CacheManager(CProxy_NewMain nm) {new_main = nm; }
 
   void initialize(const CkCallback& cb) {
     auto node_size = this->isNodeGroup() ? CmiNodeSize(CkMyNode()) : 1;
     cached_leaves.resize(node_size);
     displaced_leaves.resize(node_size);
-    auto& config = paratreet::getConfiguration();
-    branch_factor = config.branchFactor();
-    auto pool_elem_size = std::max(config.pool_elem_size, 128);
+
+    CkReductionMsg* mymsg;
+
+    new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
+    paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
+    branch_factor = config->branchFactor();
+    auto pool_elem_size = std::max(config->pool_elem_size, 128);
     for (size_t i = 0; i < node_size; i++) {
       if (branch_factor == 2) pools.emplace_back(new FullNodePool<Data, 2>(pool_elem_size));
       else if (branch_factor == 8) pools.emplace_back(new FullNodePool<Data, 8>(pool_elem_size));
@@ -382,12 +387,15 @@ void CacheManager<Data>::requestNodes(std::pair<Key, int> param) {
 template <typename Data>
 void CacheManager<Data>::makeMsgPerNode(int start_depth, std::vector<Node<Data>*>& sending_nodes, std::vector<Particle>& sending_particles, Node<Data>* to_process)
 {
-  auto& config = paratreet::getConfiguration();
+  CkReductionMsg* mymsg;
+
+  new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
+  paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
   sending_nodes.push_back(to_process);
   if (to_process->type == Node<Data>::Type::Leaf) {
     std::copy(to_process->particles(), to_process->particles() + to_process->n_particles, std::back_inserter(sending_particles));
   }
-  if (to_process->depth + 1 < start_depth + config.cache_share_depth) {
+  if (to_process->depth + 1 < start_depth + config->cache_share_depth) {
     for (int i = 0; i < to_process->n_children; i++) {
       Node<Data>* child = to_process->getChild(i);
       makeMsgPerNode(start_depth, sending_nodes, sending_particles, child);

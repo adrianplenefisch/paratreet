@@ -3,7 +3,7 @@
 
 #include "paratreet.decl.h"
 #include "common.h"
-#include "templates.h"
+//#include "templates.h"
 #include "ParticleMsg.h"
 #include "NodeWrapper.h"
 #include "Node.h"
@@ -47,6 +47,7 @@ public:
   CProxy_TreeSpec treespec;
   CProxy_Reader readers;
   CProxy_ThreadStateHolder thread_state_holder;
+  CProxy_NewMain new_main;
 
   std::unique_ptr<Traverser<Data>> traverser;
 
@@ -54,7 +55,7 @@ public:
 
   Subtree(const CkCallback&, int, int, int, TCHolder<Data>,
           CProxy_Resumer<Data>, CProxy_CacheManager<Data>, DPHolder<Data>, 
-          CProxy_TreeSpec trsp, CProxy_Reader rds, CProxy_ThreadStateHolder tsh, bool);
+          CProxy_TreeSpec trsp, CProxy_Reader rds, CProxy_ThreadStateHolder tsh, CProxy_NewMain nm, bool);
   Subtree(CkMigrateMessage * msg){
     delete msg;
   };
@@ -109,7 +110,7 @@ Subtree<Data>::Subtree(const CkCallback& cb, int n_total_particles_,
                        int n_subtrees_, int n_partitions_, TCHolder<Data> tc_holder,
                        CProxy_Resumer<Data> r_proxy_,
                        CProxy_CacheManager<Data> cm_proxy_, DPHolder<Data> dp_holder,
-                       CProxy_TreeSpec trsp, CProxy_Reader rds, CProxy_ThreadStateHolder tsh,
+                       CProxy_TreeSpec trsp, CProxy_Reader rds, CProxy_ThreadStateHolder tsh, CProxy_NewMain nm,
                        bool matching_decomps_){
   //this->usesAtSync = true;
   n_total_particles = n_total_particles_;
@@ -122,6 +123,7 @@ Subtree<Data>::Subtree(const CkCallback& cb, int n_total_particles_,
   cm_proxy = cm_proxy_;
   cm_local = cm_proxy.ckLocalBranch();
   r_proxy  = r_proxy_;
+  new_main = nm;
 
   matching_decomps = matching_decomps_;
 
@@ -156,6 +158,7 @@ void Subtree<Data>::pup(PUP::er& p) {
   p | treespec;
   p | readers;
   p | thread_state_holder;
+  p | new_main;
 }
 
 template <typename Data>
@@ -302,9 +305,13 @@ void Subtree<Data>::buildTree(CProxy_Partition<Data> part, CkCallback cb) {
 #if DEBUG
   CkPrintf("[TP %d] key: 0x%" PRIx64 " particles: %d\n", this->thisIndex, tp_key, particles.size());
 #endif
-  auto& config = paratreet::getConfiguration();
-  Key lbf = log2(config.branchFactor());
-  auto local_root_type = getType(particles.size(), config.max_particles_per_leaf);
+  
+  CkReductionMsg* mymsg;
+
+  new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
+  paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
+  Key lbf = log2(config->branchFactor());
+  auto local_root_type = getType(particles.size(), config->max_particles_per_leaf);
   local_root = cm_local->makeNode(tp_key, local_root_type,
          Utility::getDepthFromKey(tp_key, lbf), particles.size(),
          particles.data(), nullptr, this->thisIndex, cm_local->thisIndex);
@@ -332,7 +339,11 @@ void Subtree<Data>::recursiveBuild(Node<Data>* node, Particle* node_particles, s
 #endif
   // store reference to splitters
   //static std::vector<Splitter>& splitters = readers.ckLocalBranch()->splitters;
-  auto& config = paratreet::getConfiguration();
+  
+  CkReductionMsg* mymsg;
+
+  new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
+  paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
   auto tree   = treespec.ckLocalBranch()->getTree();
 
   // Create children
@@ -349,7 +360,7 @@ void Subtree<Data>::recursiveBuild(Node<Data>* node, Particle* node_particles, s
     int n_particles = first_ge_idx - start;
 
     // Create child and store in vector
-    Node<Data>* child = cm_local->makeNode(child_key, getType(n_particles, config.max_particles_per_leaf),
+    Node<Data>* child = cm_local->makeNode(child_key, getType(n_particles, config->max_particles_per_leaf),
         node->depth + 1, n_particles, node_particles + start, node, this->thisIndex, cm_local->thisIndex);
     node->exchangeChild(i, child);
 
@@ -375,7 +386,12 @@ void Subtree<Data>::populateTree() {
   }
   CkAssert(!going_up.empty());
 
-  auto branch_factor = paratreet::getConfiguration().branchFactor();
+
+  CkReductionMsg* mymsg;
+
+  new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
+
+  auto branch_factor = ((paratreet::Configuration*)mymsg->getData())->branchFactor();
   while (going_up.size()) {
     Node<Data>* node = going_up.front();
     going_up.pop();

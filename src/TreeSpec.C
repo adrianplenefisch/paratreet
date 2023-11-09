@@ -2,7 +2,7 @@
 #include "Paratreet.h"
 
 void TreeSpec::receiveConfiguration(const CkCallback& cb, paratreet::Configuration* cfg) {
-  paratreet::setConfiguration(std::shared_ptr<paratreet::Configuration>(cfg));
+  new_main.setConfiguration(std::shared_ptr<paratreet::Configuration>(cfg));
   CkAssert(this->getTree() && this->getSubtreeDecomposition() && this->getPartitionDecomposition());
   this->contribute(cb);
 }
@@ -14,15 +14,21 @@ void TreeSpec::receiveDecomposition(const CkCallback& cb, Decomposition* d, bool
 }
 
 Decomposition* TreeSpec::getSubtreeDecomposition() {
-  auto& config = paratreet::getConfiguration();
-  auto decomp_type = paratreet::subtreeDecompForTree(config.tree_type);
+  CkReductionMsg* mymsg;
+
+  new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
+  paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
+  auto decomp_type = paratreet::subtreeDecompForTree(config->tree_type);
   getDecomposition(subtree_decomp, decomp_type, true);
   return subtree_decomp.get();
 }
 
 Decomposition* TreeSpec::getPartitionDecomposition() {
-  auto& config = paratreet::getConfiguration();
-  getDecomposition(partition_decomp, config.decomp_type, false);
+  CkReductionMsg* mymsg;
+
+  new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
+  paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
+  getDecomposition(partition_decomp, config->decomp_type, false);
   return partition_decomp.get();
 }
 
@@ -45,15 +51,18 @@ void TreeSpec::getDecomposition(std::unique_ptr<Decomposition>& decomp, paratree
 }
 
 Tree* TreeSpec::getTree() {
-  auto& config = paratreet::getConfiguration();
+  CkReductionMsg* mymsg;
+
+  new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
+  paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
   if (!tree) {
-    if (config.tree_type == paratreet::TreeType::eOct) {
+    if (config->tree_type == paratreet::TreeType::eOct) {
       tree.reset(new OctTree());
-    } else if (config.tree_type == paratreet::TreeType::eBinaryOct) {
+    } else if (config->tree_type == paratreet::TreeType::eBinaryOct) {
       tree.reset(new BinaryOctTree());
-    } else if (config.tree_type == paratreet::TreeType::eKd) {
+    } else if (config->tree_type == paratreet::TreeType::eKd) {
       tree.reset(new KdTree());
-    } else if (config.tree_type == paratreet::TreeType::eLongest) {
+    } else if (config->tree_type == paratreet::TreeType::eLongest) {
       tree.reset(new LongestDimTree());
     } else {
       CkAbort("dont recognize tree type");

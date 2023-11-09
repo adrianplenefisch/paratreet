@@ -47,14 +47,16 @@ public:
   CProxy_Reader readers;
   CProxy_TreeSpec treespec;
   CProxy_ThreadStateHolder thread_state_holder;
+  CProxy_NewMain new_main;
   CProxy_UnionFindLib libProxy;
   int n_readers;
 
   Driver(CProxy_CacheManager<Data> cache_manager_, CProxy_Resumer<Data> resumer_, CProxy_TreeCanopy<Data> calculator_,
             CProxy_Reader rds,
             CProxy_TreeSpec trsp,
-            CProxy_ThreadStateHolder tsh) :
-    cache_manager(cache_manager_), resumer(resumer_), calculator(calculator_), storage_sorted(false),treespec(trsp),thread_state_holder(tsh),readers(rds) {}
+            CProxy_ThreadStateHolder tsh,
+            CProxy_NewMain nm) :
+    cache_manager(cache_manager_), resumer(resumer_), calculator(calculator_), storage_sorted(false),treespec(trsp),thread_state_holder(tsh),readers(rds),new_main(nm) {}
 
   // Performs initial decomposition
   void init(const CkCallback& cb, const paratreet::Configuration& cfg) {
@@ -96,25 +98,28 @@ public:
   // by either loading particle information from input file or re-computing
   // the universal bounding box
   void decompose(int iter) {
-    auto& config = paratreet::getConfiguration();
+    CkReductionMsg* mymsg;
+
+    new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
+    paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
     double decomp_time = CkWallTimer();
     if (iter == 0) {
       // Build universe
       start_time = CkWallTimer();
       CkReductionMsg* result;
-      readers.load(config.input_file, CkCallbackResumeThread((void*&)result));
+      readers.load(config->input_file, CkCallbackResumeThread((void*&)result));
       CkPrintf("Loading Tipsy data and building universe: %.3lf ms\n",
           (CkWallTimer() - start_time) * 1000);
       
-      if(config.origin_of("dSoft") != paratreet::FieldOrigin::Unknown) {
-      	  CkPrintf("Setting softening to %f \n", config.dSoft);
+      if(config->origin_of("dSoft") != paratreet::FieldOrigin::Unknown) {
+      	  CkPrintf("Setting softening to %f \n", config->dSoft);
           // Softening is specified: set it for all particles.
-          readers.setSoft(config.dSoft, CkCallbackResumeThread());
+          readers.setSoft(config->dSoft, CkCallbackResumeThread());
       }
       universe = *((BoundingBox*)result->getData());
       delete result;
       remakeUniverse();
-      if (config.min_n_subtrees < CkNumPes() || config.min_n_partitions < CkNumPes()) {
+      if (config->min_n_subtrees < CkNumPes() || config->min_n_partitions < CkNumPes()) {
         CkPrintf("WARNING: Consider increasing min_n_subtrees and min_n_partitions to at least #pes\n");
       }
       // Assign keys and sort particles locally
@@ -124,10 +129,10 @@ public:
         (CkWallTimer() - start_time) * 1000);
     } else CkWaitQD();
 
-    bool matching_decomps = config.decomp_type == paratreet::subtreeDecompForTree(config.tree_type);
+    bool matching_decomps = config->decomp_type == paratreet::subtreeDecompForTree(config->tree_type);
     // Set up splitters for decomposition
     start_time = CkWallTimer();
-    n_partitions = treespec.ckLocalBranch()->getPartitionDecomposition()->findSplitters(universe, readers, treespec, config.min_n_partitions);
+    n_partitions = treespec.ckLocalBranch()->getPartitionDecomposition()->findSplitters(universe, readers, treespec, config->min_n_partitions);
     partition_locations.resize(n_partitions);
     treespec.receiveDecomposition(CkCallbackResumeThread(),
         CkPointer<Decomposition>(treespec.ckLocalBranch()->getPartitionDecomposition()), false);
@@ -139,7 +144,7 @@ public:
     treespec.ckLocalBranch()->getPartitionDecomposition()->setArrayOpts(partition_opts, {}, false);
     partitions = CProxy_Partition<Data>::ckNew(
       n_partitions, cache_manager, resumer, calculator,
-      this->thisProxy,readers, treespec, thread_state_holder,n_readers, matching_decomps, partition_opts
+      this->thisProxy,readers, treespec, thread_state_holder, new_main, n_readers, matching_decomps, partition_opts
       );
 
     libProxy = UnionFindLib::unionFindInit(partitions, n_partitions);
@@ -163,7 +168,7 @@ public:
         CkPointer<Decomposition>(treespec.ckLocalBranch()->getPartitionDecomposition()), true);
     }
     else {
-      n_subtrees = treespec.ckLocalBranch()->getSubtreeDecomposition()->findSplitters(universe, readers, treespec, config.min_n_subtrees);
+      n_subtrees = treespec.ckLocalBranch()->getSubtreeDecomposition()->findSplitters(universe, readers, treespec, config->min_n_subtrees);
       treespec.receiveDecomposition(CkCallbackResumeThread(),
         CkPointer<Decomposition>(treespec.ckLocalBranch()->getSubtreeDecomposition()), true);
       CkPrintf("Setting up splitters for subtree decompositions: %.3lf ms\n",
@@ -179,7 +184,7 @@ public:
       CkCallbackResumeThread(),
       universe.n_particles, n_subtrees, n_partitions,
       calculator, resumer,
-      cache_manager, this->thisProxy,treespec,readers,thread_state_holder, matching_decomps, subtree_opts
+      cache_manager, this->thisProxy,treespec,readers,thread_state_holder, new_main, matching_decomps, subtree_opts
       );
     CkPrintf("Created %d Subtrees: %.3lf ms\n", n_subtrees,
         (CkWallTimer() - start_time) * 1000);
@@ -207,9 +212,13 @@ public:
 
     std::cout << "Universal bounding box: " << universe << " with volume "
       << universe.box.volume() << std::endl;
-    auto& config = paratreet::getConfiguration();
+
+      CkReductionMsg* mymsg;
+
+     new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
+     paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
     double total_time = 0;
-    for (int iter = 0; iter < config.num_iterations; iter++) {
+    for (int iter = 0; iter < config->num_iterations; iter++) {
       CkPrintf("\n* Iteration %d\n", iter);
       double iter_start_time = CkWallTimer();
       // Start tree build in Subtrees
@@ -238,7 +247,10 @@ public:
       CkReduction::tupleElement* res = nullptr, *res2 = nullptr;
       msg->toTuple(&res, &numRedn);
       Real max_velocity = *(Real*)(res[0].data); // avoid max_velocity = 0.0
-      Real timestep_size = paratreet::getTimestep(universe, max_velocity);
+
+      CkReductionMsg* mymsg2;
+      new_main.getTimestep(universe, max_velocity,CkCallbackResumeThread((void*&)mymsg2));
+      Real timestep_size = *((Real*)mymsg->getData());
 
       #ifdef FOF
       ProxyPack<Data> proxy_pack (this->thisProxy, subtrees, partitions, cache_manager, libProxy, thread_state_holder);
@@ -249,7 +261,7 @@ public:
       // Prefetch into cache
       start_time = CkWallTimer();
       // use exactly one of these three commands to load the software cache
-      paratreet::preTraversalFn(proxy_pack);
+      new_main.preTraversalFn(proxy_pack);
       CkWaitQD();
       CkPrintf("TreeCanopy cache loading: %.3lf ms\n",
           (CkWallTimer() - start_time) * 1000);
@@ -263,7 +275,7 @@ public:
       // Perform traversals
       start_time = CkWallTimer();
 
-      paratreet::traversalFn(universe, proxy_pack, iter);
+      new_main.traversalFn(universe, proxy_pack, iter);
 
       std::cout << "Universal bounding box: " << universe << " with volume "
       << universe.box.volume() << std::endl;
@@ -291,16 +303,16 @@ public:
       int sumPESize = *(int*)(res2[1].data);
       float avgPESize = (float) universe.n_particles / (float) CkNumPes();
       float ratio = (float) maxPESize / avgPESize;
-      bool complete_rebuild = (config.flush_period == 0) ?
-          (ratio > config.flush_max_avg_ratio || numParticleShares * 10 > universe.n_particles) :
-          (iter % config.flush_period == config.flush_period - 1);
+      bool complete_rebuild = (config->flush_period == 0) ?
+          (ratio > config->flush_max_avg_ratio || numParticleShares * 10 > universe.n_particles) :
+          (iter % config->flush_period == config->flush_period - 1);
 
-      if (iter + 1 == config.num_iterations) complete_rebuild = false;
+      if (iter + 1 == config->num_iterations) complete_rebuild = false;
       CkPrintf("[Meta] n_subtree = %d; timestep_size = %f; numPSParticleCopies = %d; numPSParticleShares = %d; sumPESize = %d; maxPESize = %d, avgPESize = %f; ratio = %f; maxVelocity = %f; rebuild = %s\n", n_subtrees, timestep_size, numParticleCopies, numParticleShares, sumPESize, maxPESize, avgPESize, ratio, max_velocity, (complete_rebuild? "yes" : "no"));
       //End Subtree reduction message parsing
 
 
-      paratreet::postIterationFn(universe, proxy_pack, iter);
+      new_main.postIterationFn(universe, proxy_pack, iter);
 
 
       CkReductionMsg* result;
@@ -313,7 +325,7 @@ public:
 
       CkWaitQD();
       CkPrintf("Perturbations: %.3lf ms\n", (CkWallTimer() - start_time) * 1000);
-      if (!complete_rebuild && config.lb_period > 0 && iter % config.lb_period == config.lb_period - 1){
+      if (!complete_rebuild && config->lb_period > 0 && iter % config->lb_period == config->lb_period - 1){
         start_time = CkWallTimer();
         //subtrees.pauseForLB(); // move them later
         partitions.pauseForLB();
@@ -342,8 +354,8 @@ public:
       double iter_time = CkWallTimer() - iter_start_time;
       total_time += iter_time;
       CkPrintf("Iteration %d time: %.3lf ms\n", iter, iter_time * 1000);
-      if (iter == config.num_iterations-1) {
-        CkPrintf("Average iteration time: %.3lf ms\n", total_time / config.num_iterations * 1000);
+      if (iter == config->num_iterations-1) {
+        CkPrintf("Average iteration time: %.3lf ms\n", total_time / config->num_iterations * 1000);
       }
     }
 
@@ -366,15 +378,18 @@ public:
   }
 
   void loadCache(CkCallback cb) {
-    auto& config = paratreet::getConfiguration();
+    CkReductionMsg* mymsg;
+
+    new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
+    paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
     CkPrintf("Received data from %d TreeCanopies\n", (int) storage.size());
     // Sort data received from TreeCanopies (by their indices)
     if (!storage_sorted) sortStorage();
 
     // Find how many should be sent to the caches
     int send_size = storage.size();
-    if (config.num_share_nodes > 0 && config.num_share_nodes < send_size) {
-      send_size = config.num_share_nodes;
+    if (config->num_share_nodes > 0 && config->num_share_nodes < send_size) {
+      send_size = config->num_share_nodes;
     }
     else {
       CkPrintf("Broadcasting every tree canopy because num_share_nodes is unset\n");

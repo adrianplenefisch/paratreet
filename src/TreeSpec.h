@@ -7,10 +7,13 @@
 
 class TreeSpec : public CBase_TreeSpec {
 public:
-    TreeSpec(void)
+
+    CProxy_NewMain new_main;
+    TreeSpec(CProxy_NewMain nm)
     : subtree_decomp(nullptr),
       partition_decomp(nullptr),
-      tree(nullptr) { }
+      tree(nullptr),
+      new_main(nm) { }
 
     void receiveConfiguration(const CkCallback&, paratreet::Configuration*);
     void receiveDecomposition(const CkCallback&, Decomposition*, bool if_subtree);

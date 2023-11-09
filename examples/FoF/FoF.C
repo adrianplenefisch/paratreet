@@ -1,4 +1,5 @@
 #include <iostream>
+
 #include "Paratreet.h"
 #include "CentroidData.h"
 #include "unionFindLib.h"
@@ -6,6 +7,8 @@
 #include "subsetVisitor.h"
 #include "FoF.decl.h"
 #include "subsetCreator.h"
+#include "NewMain.h"
+#include "Configuration.h"
 
 
 #include "DensityVisitor.h"
@@ -59,6 +62,9 @@ class FoF : public paratreet::Main<CentroidData> {
   CProxy_UnionFindLib libProxy;
   CProxy_Partition<CentroidData> partitionProxy;
   CkArgMsg* mmsg;
+
+  public: 
+  FoF(CProxy_NewMain nm) : Main(nm) {}
   
   void main(CkArgMsg* m) override {
     // Initialize readonly variables
@@ -149,7 +155,7 @@ class FoF : public paratreet::Main<CentroidData> {
   // -------------------
   // Traversal functions
   // -------------------
-  void preTraversalFn(ProxyPack<CentroidData>& proxy_pack) override {
+  void preTraversalFn(ProxyPack<CentroidData> proxy_pack) override {
     // The size of the starter pack of data loaded by the cache manager is
     // specified in Configuration.cache_share_depth
     proxy_pack.driver.loadCache(CkCallbackResumeThread());
@@ -162,7 +168,7 @@ class FoF : public paratreet::Main<CentroidData> {
 
   }
 
-  void traversalFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) override {
+  void traversalFn(BoundingBox universe, ProxyPack<CentroidData> proxy_pack, int iter) override {
     CkPrintf("Got inside traversalFn\n");
     //only need to look at cubes that are almost touching (N=1)
     if(!periodic)
@@ -202,7 +208,7 @@ class FoF : public paratreet::Main<CentroidData> {
 
   }
 
-  void postIterationFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) override {
+  void postIterationFn(BoundingBox universe, ProxyPack<CentroidData> proxy_pack, int iter) override {
     CkPrintf("[Main] Inverted trees constructed for unionFindLib. Performing components detection\n");
     int startTime = CkWallTimer();
     libProxy.find_components(CkCallbackResumeThread());
@@ -222,7 +228,7 @@ class FoF : public paratreet::Main<CentroidData> {
     CkPrintf("[Main] Component labeling time: %f\n", CkWallTimer() - startTime);
     startTime = CkWallTimer();
     
-    paratreet::outputParticleAccelerations(universe, partitionProxy);
+    paratreet::outputParticleAccelerations(universe, partitionProxy, new_main);
     /*
     Particle* particles;
     CkReductionMsg* mymsg;
@@ -270,6 +276,11 @@ class FoF : public paratreet::Main<CentroidData> {
   }
 };
 
-PARATREET_REGISTER_MAIN(FoF);
+NewMain::NewMain(StartMessage* mm) {
+    main_.reset(new FoF(thisProxy));
+    start(mm);
+}
+
+//PARATREET_REGISTER_MAIN(FoF);
 #include "templates.h"
 #include "FoF.def.h"

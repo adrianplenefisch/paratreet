@@ -18,19 +18,24 @@
 
 #include "ProxyPackSeparate.h"
 
+
+
+
+#include "NewMain.h"
+
 #include "paratreet.decl.h"
 /* readonly  extern CProxy_Reader readers;*/
 /* readonly  extern CProxy_TreeSpec treespec;*/
 /* readonly  extern CProxy_ThreadStateHolder thread_state_holder;*/
 /* readonly  extern int n_readers;*/
 
-#define PARATREET_MAIN_VAR(m)   m##_impl_
+/*#define PARATREET_MAIN_VAR(m)   m##_impl_
 
 #define PARATREET_REGISTER_MAIN(m) \
     namespace paratreet { \
     auto& PARATREET_MAIN_VAR(m) = __initMain<m>(); \
     } \
-    PUPable_def(paratreet::configuration_of_t<m>);
+    PUPable_def(paratreet::configuration_of_t<m>);*/
 
 #define PARATREET_PER_LEAF_FN_CLASS(name)   name
 #define PARATREET_PER_LEAF_FN_TAG(name)     name##_tag_
@@ -76,6 +81,20 @@ struct StartMessage : CMessage_StartMessage
     }
 };
 
+/*template<typename T>
+struct TraversalFnMessage : CMessage_TraversalFnMessage
+{
+    BoundingBox box;
+    ProxyPack<T> pack;
+    int iter;
+    TraversalFnMessage(BoundingBox b, ProxyPack<T> p, int i)
+    {
+        box = b;
+        pack = p;
+        iter = i;
+    }
+};*/
+
 
 
 class MainChare: public CBase_MainChare {
@@ -87,7 +106,7 @@ namespace paratreet {
 
 
     template<typename Data>
-    CProxy_Driver<Data> initialize(const CkCallback& cb);
+    CProxy_Driver<Data> initialize(const CkCallback& cb, CProxy_NewMain nm);
 
     class MainBase {
         // use a shared ptr to enable custom deleters
@@ -114,8 +133,15 @@ namespace paratreet {
 
         virtual Real getTimestep(BoundingBox&, Real) = 0;
         virtual void initializeDriver(const CkCallback&) = 0;
+        
 
         virtual void setDefaults(void) {}
+        virtual ~MainBase() = default;
+
+        
+        virtual void ErasedPreTraversalFn() = 0;
+        virtual void ErasedTraversalFn(BoundingBox, int) = 0;
+        virtual void ErasedPostIterationFn(BoundingBox, int) = 0;
     };
 
     // NOTE because this is called Main, the user's instantiation cannot be
@@ -132,17 +158,38 @@ namespace paratreet {
         CProxy_Driver<T> driver;
         configuration_type conf;
 
-        // pass the configuration without a deleter by default
-        Main(void)
-        : MainBase(std::shared_ptr<Configuration>(&conf, [](void*){})) {}
+        CProxy_NewMain new_main;
 
-        virtual void initializeDriver(const CkCallback& cb) override {
-            this->driver = initialize<T>(cb);
+        // pass the configuration without a deleter by default
+        Main(CProxy_NewMain nm)
+        : MainBase(std::shared_ptr<Configuration>(&conf, [](void*){})), new_main(nm) {
+
+            new_main = nm;
         }
 
-        virtual void preTraversalFn(ProxyPack<T>&) = 0;
-        virtual void traversalFn(BoundingBox&, ProxyPack<T>&, int) = 0;
-        virtual void postIterationFn(BoundingBox&, ProxyPack<T>&, int) = 0;
+        virtual void initializeDriver(const CkCallback& cb) override {
+            this->driver = initialize<T>(cb, new_main);
+        }
+
+
+        ProxyPack<T> pp;
+
+
+
+        virtual void preTraversalFn(ProxyPack<T>) = 0;
+        virtual void traversalFn(BoundingBox, ProxyPack<T>, int) = 0;
+        virtual void postIterationFn(BoundingBox, ProxyPack<T>, int) = 0;
+
+        void ErasedPreTraversalFn() override {
+            this->preTraversalFn(pp);
+
+        }
+        void ErasedTraversalFn(BoundingBox bb, int i) override {
+            this->traversalFn(bb, pp, i);
+        }
+        void ErasedPostIterationFn(BoundingBox bb , int i) override {
+            this->postIterationFn(bb,pp,i);
+        }
 
         virtual void __register(void) override {
             PUPable_reg(configuration_type);
@@ -166,8 +213,8 @@ namespace paratreet {
     template <typename T>
     using configuration_of_t = decltype(findConfiguration_(std::declval<T&>()));
 
-    using main_type_ = std::unique_ptr<MainBase>;
-    CsvExtern(main_type_, main_);
+    /*using main_type_ = std::unique_ptr<MainBase>;
+    CsvExtern(main_type_, main_);*/
 
     using registration_fn_ = void (*)(const char*);
     class registration_node_ {
@@ -192,7 +239,7 @@ namespace paratreet {
 
     std::intptr_t __addRegistrationFn(const registration_fn_& fn, const char* name);
 
-    template<typename T>
+    /*template<typename T>
     inline MainBase& __initMain(void) {
         auto& main = CsvAccess(main_);
         new (&main) main_type_(new T());
@@ -205,18 +252,18 @@ namespace paratreet {
             while (curr) { curr = curr->next(); }
             CsvAccess(main_)->__register();
         }
-    }
+    }*/
 
-    inline Real getTimestep(BoundingBox& box, Real real) {
+    /*inline Real getTimestep(BoundingBox& box, Real real) {
         return CsvAccess(main_)->getTimestep(box, real);
-    }
+    }*/
 
-    template<typename T>
+    /*template<typename T>
     inline void preTraversalFn(ProxyPack<T>& pack) {
         ((Main<T>&)*CsvAccess(main_)).preTraversalFn(pack);
-    }
+    }*/
 
-    template<typename T>
+    /*template<typename T>
     inline void traversalFn(BoundingBox& box, ProxyPack<T>& pack, int iter) {
         ((Main<T>&)*CsvAccess(main_)).traversalFn(box, pack, iter);
     }
@@ -224,28 +271,28 @@ namespace paratreet {
     template<typename T>
     inline void postIterationFn(BoundingBox& box, ProxyPack<T>& pack, int iter) {
         ((Main<T>&)*CsvAccess(main_)).postIterationFn(box, pack, iter);
-    }
+    }*/
 
-    template<typename T>
+    /*template<typename T>
     inline void perLeafFn(int indicator, SpatialNode<T>& node, Partition<T>* partition) {
         ((Main<T>&)*CsvAccess(main_)).perLeafFn(indicator, node, partition);
-    }
+    }*/
 
-    inline void setConfiguration(std::shared_ptr<Configuration>&& cfg) {
+    /*inline void setConfiguration(std::shared_ptr<Configuration>&& cfg) {
         CsvAccess(main_)->setConfiguration(std::move(cfg));
-    }
+    }*/
 
-    template <typename T>
+    /*template <typename T>
     inline const T& getConfiguration(void) {
         return static_cast<const T&>(CsvAccess(main_)->configuration());
-    }
+    }*/
 
     template<typename Data>
-    CProxy_Driver<Data> initialize(const CkCallback& cb) {
+    CProxy_Driver<Data> initialize(const CkCallback& cb,CProxy_NewMain nm) {
         // Create readers
         int n_readers = CkNumPes();
         
-        CProxy_TreeSpec treespec = CProxy_TreeSpec::ckNew();
+        CProxy_TreeSpec treespec = CProxy_TreeSpec::ckNew(nm);
         CProxy_Reader readers = CProxy_Reader::ckNew(n_readers, treespec);
         CProxy_ThreadStateHolder thread_state_holder = CProxy_ThreadStateHolder::ckNew();
         //CProxy_UnionFindLib libProxy = UnionFindLib::unionFindInit(partitions, n_partitions);
@@ -253,20 +300,28 @@ namespace paratreet {
         // Create library chares
         CProxy_TreeCanopy<Data> canopy = CProxy_TreeCanopy<Data>::ckNew();
         canopy.doneInserting();
-        CProxy_CacheManager<Data> cache = CProxy_CacheManager<Data>::ckNew();
+        CProxy_CacheManager<Data> cache = CProxy_CacheManager<Data>::ckNew(nm);
         CProxy_Resumer<Data> resumer = CProxy_Resumer<Data>::ckNew();
 
-        CProxy_Driver<Data> driver = CProxy_Driver<Data>::ckNew(cache, resumer, canopy,readers,treespec,thread_state_holder, /*libProxy,*/ CkMyPe());
+        CProxy_Driver<Data> driver = CProxy_Driver<Data>::ckNew(cache, resumer, canopy,readers,treespec,thread_state_holder,nm, CkMyPe());
         // Call the driver initialization routine (performs decomposition)
-        auto& cfg = const_cast<paratreet::Configuration&>(paratreet::getConfiguration());
-        driver.init(cb, CkReference<Configuration>(cfg));
+        CkReductionMsg* mymsg;
+
+        nm.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
+        auto cfg = (paratreet::Configuration*)mymsg->getData();
+        driver.init(cb, *cfg);
 
         return driver;
     }
 
     template<typename Data>
-    void outputParticleAccelerations(BoundingBox& universe, CProxy_Partition<Data>& partitions) {
-        auto& output_file = paratreet::getConfiguration().output_file;
+    void outputParticleAccelerations(BoundingBox& universe, CProxy_Partition<Data>& partitions, CProxy_NewMain new_main) {
+
+        CkReductionMsg* mymsg;
+
+        new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
+        
+        auto& output_file = ((paratreet::Configuration*)mymsg->getData())->output_file;
         CProxy_Writer w = CProxy_Writer::ckNew(output_file, universe.n_particles);
         CkPrintf("Outputting particle accelerations for verification...\n");
         partitions.output(w, universe.n_particles, CkCallback::ignore);
@@ -275,8 +330,12 @@ namespace paratreet {
     }
 
     template<typename Data>
-    void outputTipsy(BoundingBox& universe, CProxy_Partition<Data>& partitions) {
-        auto& output_file = paratreet::getConfiguration().output_file;
+    void outputTipsy(BoundingBox& universe, CProxy_Partition<Data>& partitions, CProxy_NewMain new_main) {
+        CkReductionMsg* mymsg;
+
+        new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
+        
+        auto& output_file = ((paratreet::Configuration*)mymsg->getData())->output_file;
         CProxy_TipsyWriter tw = CProxy_TipsyWriter::ckNew(output_file, universe);
         CkPrintf("Outputting to Tipsy file...\n");
         partitions.output(tw, universe.n_particles, CkCallback::ignore);
@@ -285,19 +344,6 @@ namespace paratreet {
     }
 }
 
-class NewMain: public CBase_NewMain {
-  public:
 
-
-    
-
-    /*static CProxy_Reader readers;
-    static CProxy_TreeSpec treespec;
-    static CProxy_ThreadStateHolder thread_state_holder;
-    static int n_readers;*/
-    NewMain(StartMessage* mm);
-    void start(StartMessage* m);
-    void run();
-};
 
 #endif
