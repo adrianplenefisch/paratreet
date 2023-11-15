@@ -21,7 +21,7 @@
 
 
 
-#include "NewMain.h"
+//#include "NewMain.h"
 
 #include "paratreet.decl.h"
 /* readonly  extern CProxy_Reader readers;*/
@@ -94,7 +94,6 @@ struct TraversalFnMessage : CMessage_TraversalFnMessage
         iter = i;
     }
 };*/
-
 
 
 class MainChare: public CBase_MainChare {

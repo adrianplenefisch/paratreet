@@ -203,6 +203,12 @@ namespace paratreet {
       DefaultConfiguration(void) = default;
       DefaultConfiguration(CkMigrateMessage* m) : Configuration(m) {}
       PUPable_decl_inside(DefaultConfiguration);
+      ~DefaultConfiguration() {}
+
+      void pup(PUP::er &p)
+      {
+        Configuration::pup(p);
+      }
     };
 
     //override DefaultConfiguration

@@ -46,22 +46,22 @@ PARATREET_REGISTER_PER_LEAF_FN(CollisionResolveFn, CentroidData, (
 
   using namespace paratreet;
 
-  void ExMain::preTraversalFn(ProxyPack<CentroidData>& proxy_pack) {
+  void ExMain::preTraversalFn(ProxyPack<CentroidData> proxy_pack) {
     //proxy_pack.cache.startParentPrefetch(this->thisProxy, CkCallback::ignore); // MUST USE FOR UPND TRAVS
     //proxy_pack.cache.template startPrefetch<GravityVisitor>(this->thisProxy, CkCallback::ignore);
     proxy_pack.driver.loadCache(CkCallbackResumeThread());
   }
 
-  void ExMain::traversalFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) {
+  void ExMain::traversalFn(BoundingBox universe, ProxyPack<CentroidData> proxy_pack, int iter) {
     proxy_pack.partition.template startDown<GravityVisitor>(GravityVisitor(Vector3D<Real>(0, 0, 0), theta));
   }
 
-  void ExMain::postIterationFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) {
+  void ExMain::postIterationFn(BoundingBox universe, ProxyPack<CentroidData> proxy_pack, int iter) {
     proxy_pack.partition.callPerLeafFn(
       PARATREET_PER_LEAF_FN(CropFn, CentroidData),
       CkCallbackResumeThread()
     );
-    if (iter % 10000 == 0) paratreet::outputTipsy(universe, proxy_pack.partition);
+    if (iter % 10000 == 0) paratreet::outputTipsy(universe, proxy_pack.partition, new_main);
     if (iter >= iter_start_collision) {
       proxy_pack.cache.resetCachedParticles(proxy_pack.partition);
       CkWaitQD();

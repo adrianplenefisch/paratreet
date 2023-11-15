@@ -50,28 +50,9 @@ void NewMain::run() {
     main_->run();
 }
 
-template<typename T>
-void NewMain::preTraversalFn(ProxyPack<T> pack) {
-    static_cast<paratreet::Main<T>*>(main_.get())->pp = pack;
-    main_->ErasedPreTraversalFn();
-}
 
-template<typename T>
-void NewMain::traversalFn(BoundingBox box, ProxyPack<T> pack, int iter) {
-    static_cast<paratreet::Main<T>*>(main_.get())->pp = pack;
-    main_->ErasedTraversalFn(box, pack, iter);
-}
 
-template<typename T>
-void NewMain::postIterationFn(BoundingBox box, ProxyPack<T> pack, int iter) {
-    static_cast<paratreet::Main<T>*>(main_.get())->pp = pack;
-    main_->ErasedPostIterationFn(box, pack, iter);
-}
 
-template<typename T>
-void NewMain::perLeafFn(int indicator, SpatialNode<T> node, CProxy_Partition<T> partition) {
-    //main_->perLeafFn(indicator, node, partition);
-}
 
 void NewMain::setConfiguration(std::shared_ptr<paratreet::Configuration>&& cfg) {
     main_->setConfiguration(std::move(cfg));

@@ -10,6 +10,8 @@
 
 //PARATREET_REGISTER_MAIN(ExMain);
 
+
+
 /* readonly */ bool verify;
 /* readonly */ bool dual_tree;
 /* readonly */ int periodic;
@@ -131,6 +133,15 @@
   }
 
 // #include "paratreet.def.h"
+
+PUPable_def(paratreet::configuration_of_t<ExMain>);
+
+NewMain::NewMain(StartMessage* mm) {
+    main_.reset(new ExMain(thisProxy));
+    
+    start(mm);
+}
+
 #include "templates.h"
 
 #include "Main.def.h"

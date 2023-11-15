@@ -2,8 +2,7 @@
 #define PARATREET_TREECANOPY_H_
 
 #include "paratreet.decl.h"
-#include "NewMain.h"
-#include "templates.h"
+#include "Paratreet.h"
 #include "Node.h"
 #include "CacheManager.h"
 
@@ -84,4 +83,5 @@ void TreeCanopy<Data>::pup(PUP::er& p) {
   p | my_sn;
   p | recv_count;
 }
+
 #endif // PARATREET_TREECANOPY_H_

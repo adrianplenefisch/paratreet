@@ -66,13 +66,13 @@ PARATREET_REGISTER_PER_LEAF_FN(ForceFn, CentroidData,(
     }
   }));
 
-  void ExMain::preTraversalFn(ProxyPack<CentroidData>& proxy_pack) {
+  void ExMain::preTraversalFn(ProxyPack<CentroidData> proxy_pack) {
     //proxy_pack.cache.startParentPrefetch(this->thisProxy, CkCallback::ignore); // MUST USE FOR UPND TRAVS
     //proxy_pack.cache.template startPrefetch<GravityVisitor>(this->thisProxy, CkCallback::ignore);
     proxy_pack.driver.loadCache(CkCallbackResumeThread());
   }
 
-  void ExMain::traversalFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) {
+  void ExMain::traversalFn(BoundingBox universe, ProxyPack<CentroidData> proxy_pack, int iter) {
     double start_time = CkWallTimer();
     proxy_pack.partition.template startUpAndDown<DensityVisitor>(DensityVisitor());
     CkWaitQD();
@@ -101,9 +101,9 @@ PARATREET_REGISTER_PER_LEAF_FN(ForceFn, CentroidData,(
     CkPrintf("Averaging pressures: %.3lf ms\n", (CkWallTimer() - start_time) * 1000);
   }
 
-  void ExMain::postIterationFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) {
+  void ExMain::postIterationFn(BoundingBox universe, ProxyPack<CentroidData> proxy_pack, int iter) {
     if (iter == 0 && verify) {
-      paratreet::outputParticleAccelerations(universe, proxy_pack.partition);
+      paratreet::outputParticleAccelerations(universe, proxy_pack.partition,new_main);
     }
   }
 

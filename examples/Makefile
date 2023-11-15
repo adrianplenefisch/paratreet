@@ -45,8 +45,9 @@ moments.o: moments.C
 
 FoF.decl.h: ./FoF/FoF.ci $(DATA) ./subsetCreator.h ../src/Configuration.h
 	$(CHARMC) $<
+	
 
-FoFApp: FoF.decl.h ../src/Configuration.h FoF.o ../src/libparatreet.a moments.o
+FoFApp: ./FoF.decl.h ../src/Configuration.h FoF.o ../src/libparatreet.a moments.o
 	$(CHARMC) -DFOF -language charm++ $(LB_LIBS) -o FoFApp FoF.o moments.o $(LD_LIBS)
 
 FoF.o: ./FoF/FoF.C ./FoF.decl.h ./FoF/FoFVisitor.h ./subsetVisitor.h ./subsetCreator.h ../src/Configuration.h

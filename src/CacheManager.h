@@ -4,7 +4,6 @@
 #include "paratreet.decl.h"
 #include "common.h"
 #include "Utility.h"
-//#include "templates.h"
 #include "MultiData.h"
 
 #include <map>

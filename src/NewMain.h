@@ -3,12 +3,8 @@
 
 #include "paratreet.decl.h"
 #include "Configuration.h"
+#include "Paratreet.h"
 
-namespace paratreet{
-
-class MainBase;
-
-}
 
 class NewMain: public CBase_NewMain {
   public:
@@ -20,16 +16,27 @@ class NewMain: public CBase_NewMain {
     void run();
 
     template<typename T>
-    void preTraversalFn(ProxyPack<T> pack);
+    void preTraversalFn(ProxyPack<T> pack) {
+      static_cast<paratreet::Main<T>*>(main_.get())->pp = pack;
+      main_->ErasedPreTraversalFn();
+    }
 
     template<typename T>
-    void traversalFn(BoundingBox box, ProxyPack<T> pack, int iter);
+    void traversalFn(BoundingBox box, ProxyPack<T> pack, int iter) {
+      static_cast<paratreet::Main<T>*>(main_.get())->pp = pack;
+      main_->ErasedTraversalFn(box, iter);
+    }
 
     template<typename T>
-    void postIterationFn(BoundingBox box, ProxyPack<T> pack, int iter);
+    void postIterationFn(BoundingBox box, ProxyPack<T> pack, int iter) {
+      static_cast<paratreet::Main<T>*>(main_.get())->pp = pack;
+      main_->ErasedPostIterationFn(box, iter);
+    }
 
     template<typename T>
-    void perLeafFn(int indicator, SpatialNode<T> node, CProxy_Partition<T> partition);
+    void perLeafFn(int indicator, SpatialNode<T> node, CProxy_Partition<T> partition) {
+      //main_->perLeafFn(indicator, node, partition);
+    }
 
     void setConfiguration(std::shared_ptr<paratreet::Configuration>&& cfg);
 
@@ -40,3 +47,6 @@ class NewMain: public CBase_NewMain {
 
 
 #endif
+
+#include "templates.h"
+

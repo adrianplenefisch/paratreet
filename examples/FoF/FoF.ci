@@ -16,11 +16,12 @@ mainmodule FoF {
     extern entry void Partition<CentroidData> startUpAndDown<DensityVisitor> (DensityVisitor v);
     extern entry void Partition<CentroidData> startDown<subsetVisitor> (subsetVisitor v);
 
-    extern entry void NewMain preTraversalFn<CentroidData>(ProxyPack<CentroidData> pack);
+    extern entry void NewMain preTraversalFn(ProxyPack<CentroidData> pack);
     extern entry void NewMain traversalFn(BoundingBox, ProxyPack<CentroidData>, int);
     extern entry void NewMain postIterationFn(BoundingBox, ProxyPack<CentroidData>, int);
     extern entry void NewMain perLeafFn(int indicator, SpatialNode<CentroidData> node, CProxy_Partition<CentroidData> partition);
 
+    
 
 
     //chare subsetCreator {

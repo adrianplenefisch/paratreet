@@ -276,11 +276,28 @@ class FoF : public paratreet::Main<CentroidData> {
   }
 };
 
+PUPable_def(paratreet::configuration_of_t<FoF>);
+
+
+
 NewMain::NewMain(StartMessage* mm) {
     main_.reset(new FoF(thisProxy));
+    
     start(mm);
 }
 
 //PARATREET_REGISTER_MAIN(FoF);
 #include "templates.h"
+#define CK_TEMPLATES_ONLY
 #include "FoF.def.h"
+#undef CK_TEMPLATES_ONLY
+
+#include "FoF.def.h"
+
+template void NewMain::preTraversalFn(ProxyPack<CentroidData>);
+template void NewMain::traversalFn(BoundingBox, ProxyPack<CentroidData>, int);
+template void NewMain::postIterationFn(BoundingBox, ProxyPack<CentroidData>, int);
+template void NewMain::perLeafFn(int, SpatialNode<CentroidData>, CProxy_Partition<CentroidData>);
+
+
+

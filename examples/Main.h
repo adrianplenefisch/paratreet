@@ -3,9 +3,13 @@
 
 #include "CentroidData.h"
 #include "Main.decl.h"
-#include "Paratreet.h"
+#include "NewMain.h"
 
 class ExMain: public paratreet::Main<CentroidData> {
+
+  public: 
+  ExMain(CProxy_NewMain nm) : Main(nm) {}
+
   virtual Real getTimestep(BoundingBox&, Real) override;
   virtual void preTraversalFn(ProxyPack<CentroidData>) override;
   virtual void traversalFn(BoundingBox, ProxyPack<CentroidData>, int) override;
