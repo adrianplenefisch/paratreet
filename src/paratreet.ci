@@ -89,6 +89,7 @@ module paratreet {
     entry void goDown(size_t travIdx);
     entry void resumeAfterPause(size_t travIdx);
     entry void receiveLeaves(std::vector<Key>, Key, int, TPHolder<Data>);
+    entry void passUnionFindLib(CProxy_UnionFindLib ufl);
     entry void makeLeaves(int);
     entry void destroy();
     entry void reset();

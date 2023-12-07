@@ -185,6 +185,7 @@ public:
     #ifdef FOF
     // Initialize UnionFindLib for FoF
     libProxy = UnionFindLib::unionFindInit(partitions, n_partitions);
+    partitions.passUnionFindLib(libProxy);
     CkPrintf("Initialized UnionFindLib with %d partitions\n", n_partitions);
     #endif // FOF
   }

@@ -43,8 +43,11 @@ struct Partition : public CBase_Partition<Data> {
   CProxy_Resumer<Data> r_proxy;
   Resumer<Data>* r_local;
 
+
   Partition(int, CProxy_CacheManager<Data>, CProxy_Resumer<Data>, TCHolder<Data>, CProxy_Driver<Data> driver, bool);
   Partition(CkMigrateMessage * msg){delete msg;};
+
+  void passUnionFindLib(CProxy_UnionFindLib ufl);
 
   template<typename Visitor> void startDown(Visitor v);
   template<typename Visitor> void startBasicDown(Visitor v);
@@ -134,6 +137,12 @@ void Partition<Data>::initLocalBranches() {
   cm_local->unlockMaps();
   r_local->cm_local = cm_local;
   cm_local->r_proxy = r_proxy;
+}
+
+template <typename Data>
+void Partition<Data>::passUnionFindLib(CProxy_UnionFindLib ufl)
+{
+  libProxy = ufl;
 }
 
 template <typename Data>
@@ -513,6 +522,8 @@ void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
     for (int i = 0; i < leaf->n_particles; i++) {
       // encodes chare index and array index into vertexID
       uint64_t vertexID = encodeChareAndArrayIndex(particles_so_far);
+
+      CkAssert((vertexID>>32)<=25);
       leaf->setParticleVertexID(i, vertexID);
       libVertices[particles_so_far].vertexID = vertexID;
 
@@ -522,10 +533,15 @@ void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
       libVertices[particles_so_far].parent = libVertices[particles_so_far].vertexID;
       #endif
       particles_so_far++;
+      if(getLocationFromID(vertexID).first>25)
+      {
+        CkPrintf("in initializeLibVertices: %ld, %ld\n",vertexID, getLocationFromID(vertexID).first);
+      }
     }
   }
 
   UnionFindLib *libPtr = libProxy[this->thisIndex].ckLocal();
+
   libPtr->initialize_vertices(libVertices, n_particles_on_partition);
   libPtr->registerGetLocationFromID(getLocationFromID);
   this->contribute(cb);
@@ -549,7 +565,10 @@ void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
  */
 template <typename Data>
 inline uint64_t Partition<Data>::encodeChareAndArrayIndex(int particles_so_far) {
-  return (((uint64_t)this->thisIndex) << 32) | particles_so_far;
+  
+  uint64_t x = (((uint64_t)this->thisIndex) << 32) | particles_so_far;
+  CkAssert((x>>32)<=25);
+  return x;
 }
 
 /**

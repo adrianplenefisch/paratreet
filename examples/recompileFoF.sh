@@ -1,10 +1,10 @@
-cd ../../unionfind/prefixLib
+cd ../../../unionfind/prefixLib
 make clean
 make
 cd ../
 make clean
 make
-cd ../paratreet/src
+cd ../paratreet_test/paratreet/src
 make clean
 make -j8
 cd ../examples

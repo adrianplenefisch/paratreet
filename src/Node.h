@@ -74,6 +74,7 @@ public:
     particles_[i].group_number = group_number;
   }
   void setParticleVertexID(int i, uint64_t vertex_id) {
+    CkAssert((vertex_id>>32)<=25);
     particles_[i].vertex_id = vertex_id;
   }
 };

@@ -51,6 +51,7 @@ void Particle::pup(PUP::er &p) {
   p|soft;
   p|type;
   p|group_number;
+  p|vertex_id;
 }
 
 void Particle::reset() {
