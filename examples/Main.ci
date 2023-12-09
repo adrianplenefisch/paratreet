@@ -28,12 +28,9 @@ mainmodule Main {
     extern entry void Driver<CentroidData> prefetch<GravityVisitor> (CentroidData, int, CkCallback);
     extern entry void ThreadStateHolder applyAccumulatedOpposingEffects(PPHolder<CentroidData>);
 
-    extern entry void TreeCanopy<CentroidData> recvProxies(TPHolder<CentroidData>, int, CProxy_CacheManager<CentroidData>, DPHolder<CentroidData>);
-    extern entry void TreeCanopy<CentroidData> recvData(SpatialNode<CentroidData>, int);
-
-    extern entry void NewMain preTraversalFn<CentroidData>(ProxyPack<CentroidData> pack);
-    extern entry void NewMain traversalFn(BoundingBox, ProxyPack<CentroidData>, int);
-    extern entry void NewMain postIterationFn(BoundingBox, ProxyPack<CentroidData>, int);
+    extern entry void NewMain preTraversalFn(ProxyPack<CentroidData> pack, CkCallback);
+    extern entry void NewMain traversalFn(BoundingBox, ProxyPack<CentroidData>, int, CkCallback);
+    extern entry void NewMain postIterationFn(BoundingBox, ProxyPack<CentroidData>, int, CkCallback);
     extern entry void NewMain perLeafFn(int indicator, SpatialNode<CentroidData> node, CProxy_Partition<CentroidData> partition);
 
   nodegroup EwaldData {

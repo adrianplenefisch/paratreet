@@ -23,7 +23,7 @@ using namespace paratreet;
 MainChare::MainChare(CkArgMsg* m)
 {
     StartMessage* mm = new StartMessage(m->argc, m->argv,true);
-    CProxy_NewMain firstmain = CProxy_NewMain::ckNew(mm,1);
+    CProxy_NewMain firstmain = CProxy_NewMain::ckNew(mm);
     
     
 }

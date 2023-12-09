@@ -6,6 +6,7 @@
 #include "Node.h"
 #include "CacheManager.h"
 
+
 template<typename Data>
 class CProxy_Subtree;
 

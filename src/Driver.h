@@ -101,7 +101,7 @@ public:
     CkReductionMsg* mymsg;
 
     new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
-    paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
+    paratreet::Configuration* config = (paratreet::Configuration*)mymsg;
     double decomp_time = CkWallTimer();
     if (iter == 0) {
       // Build universe
@@ -209,14 +209,14 @@ public:
 
   // Core iterative loop of the simulation
   void run(CkCallback cb) {
-
+    CkPrintf("driver::run\n");
     std::cout << "Universal bounding box: " << universe << " with volume "
       << universe.box.volume() << std::endl;
 
       CkReductionMsg* mymsg;
 
      new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
-     paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
+     paratreet::Configuration* config = (paratreet::Configuration*)mymsg;
     double total_time = 0;
     for (int iter = 0; iter < config->num_iterations; iter++) {
       CkPrintf("\n* Iteration %d\n", iter);
@@ -250,7 +250,7 @@ public:
 
       CkReductionMsg* mymsg2;
       new_main.getTimestep(universe, max_velocity,CkCallbackResumeThread((void*&)mymsg2));
-      Real timestep_size = *((Real*)mymsg->getData());
+      Real timestep_size = *((Real*)mymsg);
 
       #ifdef FOF
       ProxyPack<Data> proxy_pack (this->thisProxy, subtrees, partitions, cache_manager, libProxy, thread_state_holder);
@@ -261,7 +261,7 @@ public:
       // Prefetch into cache
       start_time = CkWallTimer();
       // use exactly one of these three commands to load the software cache
-      new_main.preTraversalFn(proxy_pack);
+      new_main.preTraversalFn(proxy_pack, CkCallbackResumeThread());
       CkWaitQD();
       CkPrintf("TreeCanopy cache loading: %.3lf ms\n",
           (CkWallTimer() - start_time) * 1000);
@@ -275,7 +275,7 @@ public:
       // Perform traversals
       start_time = CkWallTimer();
 
-      new_main.traversalFn(universe, proxy_pack, iter);
+      new_main.traversalFn(universe, proxy_pack, iter, CkCallbackResumeThread());
 
       std::cout << "Universal bounding box: " << universe << " with volume "
       << universe.box.volume() << std::endl;
@@ -312,8 +312,8 @@ public:
       //End Subtree reduction message parsing
 
 
-      new_main.postIterationFn(universe, proxy_pack, iter);
-
+      new_main.postIterationFn(universe, proxy_pack, iter, CkCallbackResumeThread());
+      CkWaitQD();
 
       CkReductionMsg* result;
       partitions.perturb(timestep_size, CkCallbackResumeThread((void *&)result));
@@ -381,7 +381,7 @@ public:
     CkReductionMsg* mymsg;
 
     new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
-    paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
+    paratreet::Configuration* config = (paratreet::Configuration*)mymsg;
     CkPrintf("Received data from %d TreeCanopies\n", (int) storage.size());
     // Sort data received from TreeCanopies (by their indices)
     if (!storage_sorted) sortStorage();

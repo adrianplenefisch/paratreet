@@ -16,6 +16,8 @@ module paratreet {
   PUPable BinaryOctDecomposition;
   PUPable KdDecomposition;
   PUPable LongestDimDecomposition;
+  //PUPable Configuration;
+  //PUPable DefaultConfiguration;
 
   //readonly CProxy_Reader readers;
   //readonly CProxy_TreeSpec treespec;
@@ -101,7 +103,7 @@ module paratreet {
     entry void rebuild(BoundingBox, TPHolder<Data>, bool);
     entry void output(CProxy_Writer, int, CkCallback);
     entry void output(CProxy_TipsyWriter, int, CkCallback);
-    entry void callPerLeafFn(CkReference<paratreet::PerLeafAble<Data>>, const CkCallback&);
+    entry void callPerLeafFn(const CkCallback&);
     entry void deleteParticleOfOrder(int order);
     entry void pauseForLB();
     entry void requestParticleUpdates(int cm_index, std::vector<Key> pKeys);
@@ -203,28 +205,28 @@ module paratreet {
     entry CollocateMap(CkPointer<Decomposition>, const std::vector<int>&);
   };
 
-  array [1d] NewMain {
+  chare NewMain {
 
 
     entry [nokeep] NewMain(StartMessage* mm);
-    entry [nokeep] void start(StartMessage* m);
+    entry [threaded] void start(StartMessage* m);
     entry [threaded] void run();
 
     template<typename T>
-    entry void preTraversalFn(ProxyPack<T> pack);
+    entry void preTraversalFn(ProxyPack<T> pack, CkCallback cb);
 
     template<typename T>
-    entry void traversalFn(BoundingBox box, ProxyPack<T> pack, int iter);
+    entry void traversalFn(BoundingBox box, ProxyPack<T> pack, int iter, CkCallback cb);
 
     template<typename T>
-    entry void postIterationFn(BoundingBox box, ProxyPack<T> pack, int iter);
+    entry void postIterationFn(BoundingBox box, ProxyPack<T> pack, int iter, CkCallback cb);
 
     template<typename T>
     entry void perLeafFn(int indicator, SpatialNode<T> node, CProxy_Partition<T> partition);
 
     entry void setConfiguration(std::shared_ptr<paratreet::Configuration>&& cfg);
 
-    entry void getConfiguration(CkCallback& cb);
+    entry [threaded] void getConfiguration(CkCallback& cb);
 
     entry void getTimestep(BoundingBox box, Real real, CkCallback& cb);
     

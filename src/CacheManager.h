@@ -101,7 +101,7 @@ public:
     CkReductionMsg* mymsg;
 
     new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
-    paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
+    paratreet::Configuration* config = (paratreet::Configuration*)mymsg;
     branch_factor = config->branchFactor();
     auto pool_elem_size = std::max(config->pool_elem_size, 128);
     for (size_t i = 0; i < node_size; i++) {
@@ -389,7 +389,7 @@ void CacheManager<Data>::makeMsgPerNode(int start_depth, std::vector<Node<Data>*
   CkReductionMsg* mymsg;
 
   new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
-  paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
+  paratreet::Configuration* config = (paratreet::Configuration*)mymsg;
   sending_nodes.push_back(to_process);
   if (to_process->type == Node<Data>::Type::Leaf) {
     std::copy(to_process->particles(), to_process->particles() + to_process->n_particles, std::back_inserter(sending_particles));

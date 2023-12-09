@@ -81,6 +81,11 @@ struct StartMessage : CMessage_StartMessage
     }
 };
 
+/*struct ConfigurationMessage : CMessage_ConfigurationMessage
+{
+    
+}*/
+
 /*template<typename T>
 struct TraversalFnMessage : CMessage_TraversalFnMessage
 {
@@ -138,9 +143,10 @@ namespace paratreet {
         virtual ~MainBase() = default;
 
         
-        virtual void ErasedPreTraversalFn() = 0;
-        virtual void ErasedTraversalFn(BoundingBox, int) = 0;
-        virtual void ErasedPostIterationFn(BoundingBox, int) = 0;
+        virtual void ErasedPreTraversalFn(CkCallback) = 0;
+        virtual void ErasedTraversalFn(BoundingBox, int, CkCallback) = 0;
+        virtual void ErasedPostIterationFn(BoundingBox, int, CkCallback) = 0;
+        virtual void ErasedPerLeafFn(int) = 0;
     };
 
     // NOTE because this is called Main, the user's instantiation cannot be
@@ -170,24 +176,28 @@ namespace paratreet {
             this->driver = initialize<T>(cb, new_main);
         }
 
-
+        //variables for input to type erased functions 
         ProxyPack<T> pp;
+        SpatialNode<T> n;
+        CProxy_Partition<T> p;
 
+        virtual void preTraversalFn(ProxyPack<T>, CkCallback) = 0;
+        virtual void traversalFn(BoundingBox, ProxyPack<T>, int, CkCallback) = 0;
+        virtual void postIterationFn(BoundingBox, ProxyPack<T>, int, CkCallback) = 0;
+        virtual void perLeafFn(int, SpatialNode<T>, CProxy_Partition<T>) = 0;
 
-
-        virtual void preTraversalFn(ProxyPack<T>) = 0;
-        virtual void traversalFn(BoundingBox, ProxyPack<T>, int) = 0;
-        virtual void postIterationFn(BoundingBox, ProxyPack<T>, int) = 0;
-
-        void ErasedPreTraversalFn() override {
-            this->preTraversalFn(pp);
+        void ErasedPreTraversalFn(CkCallback cb) override {
+            this->preTraversalFn(pp,cb);
 
         }
-        void ErasedTraversalFn(BoundingBox bb, int i) override {
-            this->traversalFn(bb, pp, i);
+        void ErasedTraversalFn(BoundingBox bb, int i, CkCallback cb) override {
+            this->traversalFn(bb, pp, i,cb);
         }
-        void ErasedPostIterationFn(BoundingBox bb , int i) override {
-            this->postIterationFn(bb,pp,i);
+        void ErasedPostIterationFn(BoundingBox bb , int i, CkCallback cb) override {
+            this->postIterationFn(bb,pp,i,cb);
+        }
+        void ErasedPerLeafFn(int i) override {
+            this->perLeafFn(i,n,p);
         }
 
         virtual void __register(void) override {
@@ -304,11 +314,16 @@ namespace paratreet {
 
         CProxy_Driver<Data> driver = CProxy_Driver<Data>::ckNew(cache, resumer, canopy,readers,treespec,thread_state_holder,nm, CkMyPe());
         // Call the driver initialization routine (performs decomposition)
-        CkReductionMsg* mymsg;
+
+        CkReductionMsg* mymsg = 0;
 
         nm.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
-        auto cfg = (paratreet::Configuration*)mymsg->getData();
-        driver.init(cb, *cfg);
+        auto cfg = (paratreet::Configuration*)mymsg;
+
+        
+
+
+        driver.init(cb, CkReference<Configuration>(*cfg));
 
         return driver;
     }
@@ -320,7 +335,7 @@ namespace paratreet {
 
         new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
         
-        auto& output_file = ((paratreet::Configuration*)mymsg->getData())->output_file;
+        auto& output_file = ((paratreet::Configuration*)mymsg)->output_file;
         CProxy_Writer w = CProxy_Writer::ckNew(output_file, universe.n_particles);
         CkPrintf("Outputting particle accelerations for verification...\n");
         partitions.output(w, universe.n_particles, CkCallback::ignore);
@@ -334,7 +349,7 @@ namespace paratreet {
 
         new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
         
-        auto& output_file = ((paratreet::Configuration*)mymsg->getData())->output_file;
+        auto& output_file = ((paratreet::Configuration*)mymsg)->output_file;
         CProxy_TipsyWriter tw = CProxy_TipsyWriter::ckNew(output_file, universe);
         CkPrintf("Outputting to Tipsy file...\n");
         partitions.output(tw, universe.n_particles, CkCallback::ignore);

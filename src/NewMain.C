@@ -60,12 +60,17 @@ void NewMain::setConfiguration(std::shared_ptr<paratreet::Configuration>&& cfg) 
 
 void NewMain::getConfiguration(CkCallback cb)
 {
-    this->contribute(sizeof(main_->configuration()), &(main_->configuration()), CkReduction::nop, cb);
+
+
+    auto returnPointer = &(main_->configuration());
+
+    cb.send(CkPointer<paratreet::Configuration>(returnPointer));
 }
 void NewMain::getTimestep(BoundingBox box, Real real, CkCallback cb)
 {
     Real time_step = main_->getTimestep(box, real);
-    this->contribute(sizeof(Real), &time_step, CkReduction::nop, cb);
+    //this->contribute(sizeof(Real), &time_step, CkReduction::nop, cb);
+    cb.send(&time_step);
 }
 
 

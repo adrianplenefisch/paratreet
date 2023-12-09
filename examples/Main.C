@@ -1,3 +1,4 @@
+#include "NewMain.h"
 #include "Main.h"
 
 #include "GravityVisitor.h"
@@ -6,7 +7,7 @@
 #include "CollisionVisitor.h"
 #include "EwaldData.h"
 #include "unionFindLib.h"
-#include "NewMain.h"
+
 
 //PARATREET_REGISTER_MAIN(ExMain);
 

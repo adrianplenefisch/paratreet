@@ -26,7 +26,7 @@ Vector3D<Real> fPeriod;
 
 using namespace paratreet;
 
-PARATREET_REGISTER_PER_LEAF_FN(DensityFn, CentroidData, (
+/*PARATREET_REGISTER_PER_LEAF_FN(DensityFn, CentroidData, (
   [](SpatialNode<CentroidData>& leaf, Partition<CentroidData>* partition) {
     leaf.data.max_rad = 0;
     for (int pi = 0; pi < leaf.n_particles; pi++) {
@@ -51,7 +51,7 @@ PARATREET_REGISTER_PER_LEAF_FN(DensityFn, CentroidData, (
       leaf.data.max_rad = std::max(leaf.data.max_rad, fBall);
       Q.clear();
     }
-  }));
+  }));*/
 
 static void initialize() {
   BoundingBox::registerReducer();
@@ -155,7 +155,7 @@ class FoF : public paratreet::Main<CentroidData> {
   // -------------------
   // Traversal functions
   // -------------------
-  void preTraversalFn(ProxyPack<CentroidData> proxy_pack) override {
+  void preTraversalFn(ProxyPack<CentroidData> proxy_pack, CkCallback cb) override {
     // The size of the starter pack of data loaded by the cache manager is
     // specified in Configuration.cache_share_depth
     proxy_pack.driver.loadCache(CkCallbackResumeThread());
@@ -166,9 +166,11 @@ class FoF : public paratreet::Main<CentroidData> {
 
     libProxy[0].ckLocal();
 
+    cb.send();
+
   }
 
-  void traversalFn(BoundingBox universe, ProxyPack<CentroidData> proxy_pack, int iter) override {
+  void traversalFn(BoundingBox universe, ProxyPack<CentroidData> proxy_pack, int iter, CkCallback cb) override {
     CkPrintf("Got inside traversalFn\n");
     //only need to look at cubes that are almost touching (N=1)
     if(!periodic)
@@ -187,28 +189,28 @@ class FoF : public paratreet::Main<CentroidData> {
         }
       }
     }
-    CkPrintf("Got to after FoFVisitor stuff\n");
     double start_time = CkWallTimer();
-    proxy_pack.partition.template startUpAndDown<DensityVisitor>(DensityVisitor());
+    /*proxy_pack.partition.template startUpAndDown<DensityVisitor>(DensityVisitor());
     CkWaitQD();
     CkPrintf("K-nearest neighbors traversal: %.3lf ms\n", (CkWallTimer() - start_time) * 1000);
     start_time = CkWallTimer();
     // by now, all density requests have gone out
     proxy_pack.partition.callPerLeafFn(
-      PARATREET_PER_LEAF_FN(DensityFn, CentroidData), // calculates density, fills requests
+      //PARATREET_PER_LEAF_FN(DensityFn, CentroidData), // calculates density, fills requests
       CkCallbackResumeThread()
     );
     CkWaitQD();
     CkPrintf("Density calculations and sharing: %.3lf ms\n", (CkWallTimer() - start_time) * 1000);
-
+    */
     proxy_pack.partition.template startDown<subsetVisitor>(subsetVisitor(Vector3D<Real> (0,0,0)));
     //CProxy_subsetCreator::ckNew();
 
-   
+
+    cb.send();
 
   }
 
-  void postIterationFn(BoundingBox universe, ProxyPack<CentroidData> proxy_pack, int iter) override {
+  void postIterationFn(BoundingBox universe, ProxyPack<CentroidData> proxy_pack, int iter, CkCallback cb) override {
     CkPrintf("[Main] Inverted trees constructed for unionFindLib. Performing components detection\n");
     int startTime = CkWallTimer();
     libProxy.find_components(CkCallbackResumeThread());
@@ -259,10 +261,12 @@ class FoF : public paratreet::Main<CentroidData> {
     );
     CkWaitQD();*/
 
-    CkPrintf("Attempting to run subsetCreator functions. \n");
+    /*CkPrintf("Attempting to run subsetCreator functions. \n");
     subsetCreator subset_creator = subsetCreator();
     subset_creator.createSubsets(partitionProxy,universe.n_particles);
-    subset_creator.runSubsets(mmsg);
+    subset_creator.runSubsets(mmsg);*/
+
+    cb.send();
 
   }
   
@@ -274,10 +278,52 @@ class FoF : public paratreet::Main<CentroidData> {
     driver.run(CkCallbackResumeThread());
     CkExit();
   }
+  void perLeafFn(int iter, SpatialNode<CentroidData> leaf, CProxy_Partition<CentroidData> partition) override {
+    leaf.data.max_rad = 0;
+    for (int pi = 0; pi < leaf.n_particles; pi++) {
+      auto& part = leaf.particles()[pi];
+      auto& Q = leaf.data.pps[pi].neighbors;
+      auto rsq = Q[0].fKey, fBall = std::sqrt(rsq);
+      // sum up the density. requires 0ing of densities
+      Real density = 0.;
+      auto ih2 = 4.0 / rsq;  // 1/h^2
+      for (int i = 0; i < Q.size(); i++) {
+        auto& fDist2 = Q[i].fKey;
+        auto r2 = fDist2 * ih2;
+        auto rs = kernelM4(r2);
+        density += rs * Q[i].pPtr->mass;
+      }
+      Real r_cubed = rsq * fBall;
+      density /= (0.125 * M_PI * r_cubed);
+      auto copy_part = part;
+      copy_part.density = density;
+      leaf.changeParticle(pi, copy_part);
+      leaf.data.pps[pi].sphBallSq = rsq;
+      leaf.data.max_rad = std::max(leaf.data.max_rad, fBall);
+      Q.clear();
+    }
+  }
 };
+
+
 
 PUPable_def(paratreet::configuration_of_t<FoF>);
 
+void __register(void) {
+  //PUPable_reg(paratreet::Configuration);
+  PUPable_reg(paratreet::configuration_of_t<FoF>);
+
+  CkIndex_CacheManager<CentroidData>::__register("CacheManager<CentroidData>", sizeof(CacheManager<CentroidData>));
+  CkIndex_Resumer<CentroidData>::__register("Resumer<CentroidData>", sizeof(Resumer<CentroidData>));
+  CkIndex_Partition<CentroidData>::__register("Partition<CentroidData>", sizeof(Partition<CentroidData>));
+  CkIndex_Subtree<CentroidData>::__register("Subtree<CentroidData>", sizeof(Subtree<CentroidData>));
+  CkIndex_TreeCanopy<CentroidData>::__register("TreeCanopy<CentroidData>", sizeof(TreeCanopy<CentroidData>));
+  CkIndex_Driver<CentroidData>::__register("Driver<CentroidData>", sizeof(Driver<CentroidData>));
+
+  CkIndex_Reader::idx_request<CentroidData>( static_cast<void (Reader::*)(const CProxy_Subtree<CentroidData> &, int, int)>(NULL));
+  CkIndex_Reader::idx_flush<CentroidData>( static_cast<void (Reader::*)(int, const CProxy_Subtree<CentroidData> &)>(NULL));
+  CkIndex_Reader::idx_assignPartitions<CentroidData>( static_cast<void (Reader::*)(int, const CProxy_Partition<CentroidData> &)>(NULL));
+}
 
 
 NewMain::NewMain(StartMessage* mm) {
@@ -285,6 +331,11 @@ NewMain::NewMain(StartMessage* mm) {
     
     start(mm);
 }
+
+template void NewMain::preTraversalFn(ProxyPack<CentroidData>,CkCallback);
+template void NewMain::traversalFn(BoundingBox, ProxyPack<CentroidData>, int, CkCallback);
+template void NewMain::postIterationFn(BoundingBox, ProxyPack<CentroidData>, int, CkCallback);
+template void NewMain::perLeafFn(int, SpatialNode<CentroidData>, CProxy_Partition<CentroidData>);
 
 //PARATREET_REGISTER_MAIN(FoF);
 #include "templates.h"
@@ -294,10 +345,7 @@ NewMain::NewMain(StartMessage* mm) {
 
 #include "FoF.def.h"
 
-template void NewMain::preTraversalFn(ProxyPack<CentroidData>);
-template void NewMain::traversalFn(BoundingBox, ProxyPack<CentroidData>, int);
-template void NewMain::postIterationFn(BoundingBox, ProxyPack<CentroidData>, int);
-template void NewMain::perLeafFn(int, SpatialNode<CentroidData>, CProxy_Partition<CentroidData>);
+
 
 
 

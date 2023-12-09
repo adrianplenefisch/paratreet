@@ -1,3 +1,6 @@
+#include "NewMain.h"
+#include "CentroidData.h"
+
 #include "Main.h"
 #include "GravityVisitor.h"
 
@@ -17,16 +20,17 @@ extern CProxy_EwaldData ewaldProxy;
 
   using namespace paratreet;
 
-  void ExMain::preTraversalFn(ProxyPack<CentroidData> proxy_pack) {
+  void ExMain::preTraversalFn(ProxyPack<CentroidData> proxy_pack, CkCallback cb) {
     //proxy_pack.cache.startParentPrefetch(this->thisProxy, CkCallback::ignore); // MUST USE FOR UPND TRAVS
     //proxy_pack.cache.template startPrefetch<GravityVisitor>(this->thisProxy, CkCallback::ignore);
     proxy_pack.driver.loadCache(CkCallbackResumeThread());
     if(periodic) {
         ewaldProxy.EwaldInit(proxy_pack.cache.ckLocalBranch()->root->data, CkCallbackResumeThread());
     }
+    cb.send();
   }
 
-  void ExMain::traversalFn(BoundingBox universe, ProxyPack<CentroidData> proxy_pack, int iter) {
+  void ExMain::traversalFn(BoundingBox universe, ProxyPack<CentroidData> proxy_pack, int iter, CkCallback cb) {
     if (dual_tree && periodic) CkAbort("Not sure about this -- dual_tree and periodic both set");
     if (dual_tree) proxy_pack.subtree.startDual<GravityVisitor>(GravityVisitor(Vector3D<Real>(0, 0, 0), theta));
     if (!periodic) {
@@ -45,19 +49,21 @@ extern CProxy_EwaldData ewaldProxy;
 
       replicas(nReplicas); // (2*nReplicas + 1)^3 boxes
       proxy_pack.partition.callPerLeafFn(
-          PARATREET_PER_LEAF_FN(LeafEwaldFn, CentroidData),
+          //PARATREET_PER_LEAF_FN(LeafEwaldFn, CentroidData),
           CkCallbackResumeThread()
           );
     }
+    cb.send();
   }
 
-  void ExMain::postIterationFn(BoundingBox universe, ProxyPack<CentroidData> proxy_pack, int iter) {
+  void ExMain::postIterationFn(BoundingBox universe, ProxyPack<CentroidData> proxy_pack, int iter, CkCallback cb) {
     if (iter == 0 && verify) {
       //new_main.outputParticleAccelerations(universe, proxy_pack.partition);
     }
     else if (periodic) {
       // do ewald
     }
+    cb.send();
   }
 
   Real ExMain::getTimestep(BoundingBox& universe, Real max_velocity) {
@@ -65,3 +71,5 @@ extern CProxy_EwaldData ewaldProxy;
     Real temp = universe_box_len / max_velocity / std::cbrt(universe.n_particles);
     return std::min(temp, max_timestep);
   }
+
+#include "templates.h"

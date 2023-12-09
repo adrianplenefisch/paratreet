@@ -16,26 +16,28 @@ class NewMain: public CBase_NewMain {
     void run();
 
     template<typename T>
-    void preTraversalFn(ProxyPack<T> pack) {
+    void preTraversalFn(ProxyPack<T> pack, CkCallback cb) {
       static_cast<paratreet::Main<T>*>(main_.get())->pp = pack;
-      main_->ErasedPreTraversalFn();
+      main_->ErasedPreTraversalFn(cb);
     }
 
     template<typename T>
-    void traversalFn(BoundingBox box, ProxyPack<T> pack, int iter) {
+    void traversalFn(BoundingBox box, ProxyPack<T> pack, int iter, CkCallback cb) {
       static_cast<paratreet::Main<T>*>(main_.get())->pp = pack;
-      main_->ErasedTraversalFn(box, iter);
+      main_->ErasedTraversalFn(box, iter,cb);
     }
 
     template<typename T>
-    void postIterationFn(BoundingBox box, ProxyPack<T> pack, int iter) {
+    void postIterationFn(BoundingBox box, ProxyPack<T> pack, int iter, CkCallback cb) {
       static_cast<paratreet::Main<T>*>(main_.get())->pp = pack;
-      main_->ErasedPostIterationFn(box, iter);
+      main_->ErasedPostIterationFn(box, iter,cb);
     }
 
     template<typename T>
     void perLeafFn(int indicator, SpatialNode<T> node, CProxy_Partition<T> partition) {
-      //main_->perLeafFn(indicator, node, partition);
+      static_cast<paratreet::Main<T>*>(main_.get())->n = node;
+      static_cast<paratreet::Main<T>*>(main_.get())->p = partition;
+      main_->ErasedPerLeafFn(indicator);
     }
 
     void setConfiguration(std::shared_ptr<paratreet::Configuration>&& cfg);

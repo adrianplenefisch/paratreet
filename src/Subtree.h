@@ -309,7 +309,7 @@ void Subtree<Data>::buildTree(CProxy_Partition<Data> part, CkCallback cb) {
   CkReductionMsg* mymsg;
 
   new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
-  paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
+  paratreet::Configuration* config = (paratreet::Configuration*)mymsg;
   Key lbf = log2(config->branchFactor());
   auto local_root_type = getType(particles.size(), config->max_particles_per_leaf);
   local_root = cm_local->makeNode(tp_key, local_root_type,
@@ -343,7 +343,7 @@ void Subtree<Data>::recursiveBuild(Node<Data>* node, Particle* node_particles, s
   CkReductionMsg* mymsg;
 
   new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
-  paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
+  paratreet::Configuration* config = (paratreet::Configuration*)mymsg;
   auto tree   = treespec.ckLocalBranch()->getTree();
 
   // Create children
@@ -391,7 +391,7 @@ void Subtree<Data>::populateTree() {
 
   new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
 
-  auto branch_factor = ((paratreet::Configuration*)mymsg->getData())->branchFactor();
+  auto branch_factor = ((paratreet::Configuration*)mymsg)->branchFactor();
   while (going_up.size()) {
     Node<Data>* node = going_up.front();
     going_up.pop();

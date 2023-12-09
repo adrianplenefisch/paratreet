@@ -119,7 +119,7 @@ public:
     CkReductionMsg* mymsg;
 
     new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
-    request_pause_interval = ((paratreet::Configuration*)mymsg->getData())->request_pause_interval;
+    request_pause_interval = ((paratreet::Configuration*)mymsg)->request_pause_interval;
     stats = thread_state_holder.ckLocalBranch();
     if (delay_leaf) interactions.resize(leaves.size());
   }
@@ -262,7 +262,7 @@ public:
     CkReductionMsg* mymsg;
 
     new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
-    paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
+    paratreet::Configuration* config = (paratreet::Configuration*)mymsg;
     request_pause_interval = config->request_pause_interval;
     auto iter_pause_interval = config->iter_pause_interval;
     next_stop_index += iter_pause_interval > 0 ? iter_pause_interval : leaves.size();
@@ -288,7 +288,7 @@ public:
     CkReductionMsg* mymsg;
 
     new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
-    auto iter_pause_interval = ((paratreet::Configuration*)mymsg->getData())->iter_pause_interval;
+    auto iter_pause_interval = ((paratreet::Configuration*)mymsg)->iter_pause_interval;
     next_stop_index += iter_pause_interval > 0 ? iter_pause_interval : leaves.size();
     startTrav();
   }

@@ -17,7 +17,7 @@ Decomposition* TreeSpec::getSubtreeDecomposition() {
   CkReductionMsg* mymsg;
 
   new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
-  paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
+  paratreet::Configuration* config = (paratreet::Configuration*)mymsg;
   auto decomp_type = paratreet::subtreeDecompForTree(config->tree_type);
   getDecomposition(subtree_decomp, decomp_type, true);
   return subtree_decomp.get();
@@ -27,7 +27,7 @@ Decomposition* TreeSpec::getPartitionDecomposition() {
   CkReductionMsg* mymsg;
 
   new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
-  paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
+  paratreet::Configuration* config = (paratreet::Configuration*)mymsg;
   getDecomposition(partition_decomp, config->decomp_type, false);
   return partition_decomp.get();
 }
@@ -54,7 +54,7 @@ Tree* TreeSpec::getTree() {
   CkReductionMsg* mymsg;
 
   new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
-  paratreet::Configuration* config = (paratreet::Configuration*)mymsg->getData();
+  paratreet::Configuration* config = (paratreet::Configuration*)mymsg;
   if (!tree) {
     if (config->tree_type == paratreet::TreeType::eOct) {
       tree.reset(new OctTree());

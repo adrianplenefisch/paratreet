@@ -191,6 +191,7 @@ namespace paratreet {
             p | fPeriod;
             p | dSoft;
             p | linking_length;
+            p | min_vertices_per_component;
         }
         virtual ~Configuration() { }
     };

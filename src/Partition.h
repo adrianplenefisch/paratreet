@@ -66,7 +66,7 @@ struct Partition : public CBase_Partition<Data> {
   void rebuild(BoundingBox, TPHolder<Data>, bool);
   void output(CProxy_Writer w, int n_total_particles, CkCallback cb);
   void output(CProxy_TipsyWriter w, int n_total_particles, CkCallback cb);
-  void callPerLeafFn(paratreet::PerLeafAble<Data>&, const CkCallback&);
+  void callPerLeafFn(const CkCallback&);
   void deleteParticleOfOrder(int order) {particle_delete_order.insert(order);}
   void requestParticleUpdates(int cm_index, std::vector<Key> pKeys);
   void applyOpposingEffects(std::vector<std::pair<Key, Particle::Effect>> effects);
@@ -189,11 +189,8 @@ template <typename Visitor>
 void Partition<Data>::startUpAndDown(Visitor v)
 {
   initLocalBranches();
-  CkPrintf("Got to after initLocalBranches()\n");
   traversers.emplace_back(new UpnDTraverser<Data, Visitor>(v, traversers.size(), *this,thread_state_holder));
-  CkPrintf("Got to after tranversers.emplace_back()\n");
   startNewTraverser();
-  CkPrintf("Got to after tstartNewTraverser()\n");
 }
 
 template <typename Data>
@@ -450,7 +447,7 @@ void Partition<Data>::flush(CProxy_Reader readers, std::vector<Particle>& partic
 }
 
 template <typename Data>
-void Partition<Data>::callPerLeafFn(paratreet::PerLeafAble<Data>& perLeafFn, const CkCallback& cb)
+void Partition<Data>::callPerLeafFn(const CkCallback& cb)
 {
   for (auto && leaf : leaves) {
     new_main.perLeafFn(0,*leaf, this->thisProxy);
