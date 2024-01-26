@@ -27,15 +27,15 @@ public:
   void changeParticle(int index, const Particle& part) {
     particles_[index] = part;
   }
-  void applyAcceleration(int index, Vector3D<Real> accel) {
+  /*void applyAcceleration(int index, Vector3D<Real> accel) {
     particles_[index].acceleration += accel;
-  }
+  }*/
   void applyGasWork(int index, Real work) {
     particles_[index].pressure_dVolume += work;
   }
-  void applyPotential(int index, Real pot) {
+  /*void applyPotential(int index, Real pot) {
     particles_[index].potential += pot;
-  }
+  }*/
 
   void pup (PUP::er& p) {
     p | depth;
@@ -59,22 +59,21 @@ public:
       particles_ = nullptr;
     }
   }
-  void kick(Real timestep) {
+  /*void kick(Real timestep) {
     for (int i = 0; i < n_particles; i++) {
       particles_[i].kick(timestep);
     }
-  }
-  void perturb(Real timestep) {
+  }*/
+  /*void perturb(Real timestep) {
     for (int i = 0; i < n_particles; i++) {
       particles_[i].perturb(timestep);
     }
-  }
+  }*/
   // Sets fields used in Friends-of-Friends (FoF) clustering
   void setParticleGroupNumber(int i, long group_number) {
     particles_[i].group_number = group_number;
   }
   void setParticleVertexID(int i, uint64_t vertex_id) {
-    CkAssert((vertex_id>>32)<=25);
     particles_[i].vertex_id = vertex_id;
   }
 };

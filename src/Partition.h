@@ -216,7 +216,7 @@ void Partition<Data>::applyOpposingEffects(std::vector<std::pair<Key, Particle::
     for (int pi = 0; pi < leaf->n_particles; pi++) {
       auto it = effects_map.find(leaf->particles()[pi].key);
       if (it != effects_map.end()) {
-        leaf->applyAcceleration(pi, it->second.first);
+        //leaf->applyAcceleration(pi, it->second.first);
         leaf->applyGasWork(pi, it->second.second);
       }
     }
@@ -350,7 +350,7 @@ template <typename Data>
 void Partition<Data>::kick(Real timestep, CkCallback cb)
 {
   for (auto && leaf : leaves) {
-    leaf->kick(timestep);
+    //leaf->kick(timestep);
   }
   this->contribute(cb);
 }
@@ -387,7 +387,7 @@ void Partition<Data>::perturb(Real timestep, CkCallback cb)
   #endif
 
   for (auto && p : saved_particles) {
-    p.perturb(timestep);
+    //p.perturb(timestep);
     box.grow(p.position);
     box.mass += p.mass;
     box.ke += 0.5 * p.mass * p.velocity.lengthSquared();
@@ -522,8 +522,6 @@ void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
     for (int i = 0; i < leaf->n_particles; i++) {
       // encodes chare index and array index into vertexID
       uint64_t vertexID = encodeChareAndArrayIndex(particles_so_far);
-
-      CkAssert((vertexID>>32)<=25);
       leaf->setParticleVertexID(i, vertexID);
       libVertices[particles_so_far].vertexID = vertexID;
 
@@ -533,10 +531,6 @@ void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
       libVertices[particles_so_far].parent = libVertices[particles_so_far].vertexID;
       #endif
       particles_so_far++;
-      if(getLocationFromID(vertexID).first>25)
-      {
-        CkPrintf("in initializeLibVertices: %ld, %ld\n",vertexID, getLocationFromID(vertexID).first);
-      }
     }
   }
 
@@ -567,7 +561,7 @@ template <typename Data>
 inline uint64_t Partition<Data>::encodeChareAndArrayIndex(int particles_so_far) {
   
   uint64_t x = (((uint64_t)this->thisIndex) << 32) | particles_so_far;
-  CkAssert((x>>32)<=25);
+  
   return x;
 }
 

@@ -4,7 +4,7 @@ Particle::Particle() : key(Key(0)) {
   reset();
 }
 
-void Particle::kick(Real timestep) {
+/*void Particle::kick(Real timestep) {
   velocity += acceleration * timestep / 2;
 }
 
@@ -18,7 +18,7 @@ void Particle::perturb(Real timestep) {
   u_predicted = u - pressure_dVolume * uDelta;
   density = 0;
   pressure_dVolume = 0.;
-}
+}*/
 
 void Particle::adjustNewUniverse(OrientedBox<Real> universe) {
   for (int dim = 0; dim < 3; dim++) {
@@ -41,12 +41,12 @@ void Particle::pup(PUP::er &p) {
   p|partition_idx;
   p|mass;
   p|density;
-  p|potential;
-  p|u;
-  p|u_predicted;
+  //p|potential;
+  //p|u;
+  //p|u_predicted;
   p|pressure_dVolume;
   p|position;
-  p|acceleration;
+  //p|acceleration;
   p|velocity;
   p|soft;
   p|type;
@@ -57,7 +57,7 @@ void Particle::pup(PUP::er &p) {
 void Particle::reset() {
   pressure_dVolume = 0.0;
   density       = 0.0;
-  acceleration  = Vector3D<Real> (0.0, 0.0, 0.0);
+  //acceleration  = Vector3D<Real> (0.0, 0.0, 0.0);
 }
 
 bool Particle::operator==(const Particle& other) const {

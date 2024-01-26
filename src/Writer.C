@@ -61,14 +61,14 @@ void Writer::do_write()
 
   for (const auto& particle : particles) {
     Real outval;
-    if (cur_dim == 0) outval = particle.acceleration.x;
-    else if (cur_dim == 1) outval = particle.acceleration.y;
-    else if (cur_dim == 2) outval = particle.acceleration.z;
+    //if (cur_dim == 0) outval = particle.acceleration.x;
+    //else if (cur_dim == 1) outval = particle.acceleration.y;
+    //else if (cur_dim == 2) outval = particle.acceleration.z;
     fprintf(fp, "%.14g\n", outval);
     if (cur_dim == 0) {
         fprintf(fpDen, "%.14g\n", particle.density);
         const double gammam1 = 5./3. - 1.0;
-        fprintf(fpPres, "%.14g\n", gammam1*particle.u*particle.density);
+        //fprintf(fpPres, "%.14g\n", gammam1*particle.u*particle.density);
         #ifdef FOF
         fprintf(fpGrp, "%ld\n", particle.group_number);
         #endif // FOF
