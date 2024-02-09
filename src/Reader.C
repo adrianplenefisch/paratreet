@@ -160,7 +160,6 @@ void Reader::loadFromMsg(Particle* pm, int n_total, const CkCallback& cb)
     box.mass += particles[i].mass;
     box.ke += particles[i].mass * particles[i].velocity.lengthSquared();
     box.pe = 0.0;
-    CkPrintf("inside loadFromMsg.The position is %f, %f,%f\n\n",particles[i].position[0],particles[i].position[1],particles[i].position[2]);
   }
 
   box.ke /= 2.0;

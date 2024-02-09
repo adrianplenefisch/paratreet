@@ -167,6 +167,7 @@ public:
       this->thisProxy,readers, treespec, thread_state_holder, new_main, n_readers, matching_decomps, partition_opts
       );
       libProxy = UnionFindLib::unionFindInit(partitions, n_partitions);
+      partitions.passUnionFindLib(libProxy);
     }
     else
     {
@@ -187,7 +188,6 @@ public:
     }
 
     
-    partitions.passUnionFindLib(libProxy);
     CkPrintf("Created %d Partitions: %.3lf ms\n", n_partitions,
         (CkWallTimer() - start_time) * 1000);
     // Storing partition proxy for global access for FoF
@@ -236,7 +236,6 @@ public:
       
       for(int i =0; i<n_partitions;++i)
       {
-        CkPrintf("inside four loop with i=%d\n", i);
         subtrees[i].insert(/*
         CkCallbackResumeThread(),*/
         universe.n_particles, n_subtrees, n_partitions,
@@ -271,6 +270,7 @@ public:
       CkArrayOptions prefix_opts(n_partitions);
       prefix_opts.bindTo(libProxy);
       CProxy_Prefix::ckNew(n_partitions, prefix_opts,CkCallback(CkIndex_Driver<Data>::createdPrefix(NULL), this->thisProxy));
+      partitions.passUnionFindLib(libProxy);
       delete(m);
   }
 
