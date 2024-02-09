@@ -23,6 +23,9 @@ mainmodule FoF {
     extern entry void NewMain postIterationFn(BoundingBox, ProxyPack<CentroidData>, int, CkCallback);
     extern entry void NewMain perLeafFn(int, SpatialNode<CentroidData>, CProxy_Partition<CentroidData>);
 
+    extern entry void NewMain passArrayProxies(CProxy_TreeCanopy<CentroidData>,CProxy_Subtree<CentroidData>,
+            CProxy_Partition<CentroidData>);
+
 
     //chare subsetCreator {
 

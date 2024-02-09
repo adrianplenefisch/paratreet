@@ -24,7 +24,10 @@ module paratreet {
   //readonly CProxy_ThreadStateHolder thread_state_holder;
   //readonly int n_readers;
 
-  message StartMessage;
+  message StartMessage{
+    Particle passed_particles[];
+    char argv[];
+  };
 
 
   namespace paratreet {
@@ -34,6 +37,11 @@ module paratreet {
   message ParticleMsg {
     Particle particles[];
   };
+
+  message depthMsg;
+
+  template<typename configuration_type>
+  message configurationMsg;
 
   template <typename Data>
 #ifdef GROUP_CACHE
@@ -119,7 +127,7 @@ module paratreet {
 
   template <typename Data>
   array [1d] Subtree {
-    entry Subtree(const CkCallback&, int, int, int, TCHolder<Data>,
+    entry Subtree(int, int, int, TCHolder<Data>,
           CProxy_Resumer<Data>, CProxy_CacheManager<Data>, DPHolder<Data>, 
           CProxy_TreeSpec trsp, CProxy_Reader rds, CProxy_ThreadStateHolder tsh, CProxy_NewMain nm, bool);
     entry void receive(ParticleMsg*);
@@ -151,8 +159,10 @@ module paratreet {
             CProxy_Reader rds,
             CProxy_TreeSpec trsp,
             CProxy_ThreadStateHolder tsh,
-            CProxy_NewMain);
-    entry [threaded] void init(CkCallback cb, CkReference<paratreet::Configuration>);
+            CProxy_NewMain,
+            CProxy_Subtree<Data> st,
+            CProxy_Partition<Data> pt);
+    entry [threaded] void init(CkCallback cb, CkReference<paratreet::Configuration>, Particle pm [n_particles], int n_particles);
     entry [threaded] void run(CkCallback cb);
     entry [reductiontarget] void countInts(unsigned long long intrn_counts [4]);
     entry [reductiontarget] void reportTime();
@@ -162,11 +172,15 @@ module paratreet {
     template <typename Visitor>
     entry void prefetch(Data, int, CkCallback);
     entry void request(Key request_list [list_size], int list_size, int, CkCallback);
+    entry void destroyAll();
+    entry void createdLibProxy(CkArrayCreatedMsg *m);
+    entry void createdPrefix(CkArrayCreatedMsg *m);
   }
 
   group Reader {
     entry Reader(int nr, CProxy_TreeSpec trsp);
     entry void load(std::string, const CkCallback&);
+    entry void loadFromMsg(Particle pm [n_total], int n_total, const CkCallback&);
     entry void setSoft(const double dSoft, const CkCallback&);
     entry void computeUniverseBoundingBox(const CkCallback&);
     entry void assignKeys(BoundingBox, const CkCallback&);
@@ -212,6 +226,10 @@ module paratreet {
     entry [threaded] void start(StartMessage* m);
     entry [threaded] void run();
 
+    template <typename T>
+    entry void passArrayProxies(CProxy_TreeCanopy<T> tc,CProxy_Subtree<T> st,
+        CProxy_Partition<T> p);
+
     template<typename T>
     entry void preTraversalFn(ProxyPack<T> pack, CkCallback cb);
 
@@ -228,8 +246,9 @@ module paratreet {
 
     entry [threaded] void getConfiguration(CkCallback& cb);
 
+    entry [threaded] void getDepth(CkCallback& cb);
+
     entry void getTimestep(BoundingBox box, Real real, CkCallback& cb);
-    
 
   };
 

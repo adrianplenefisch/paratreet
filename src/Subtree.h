@@ -53,7 +53,7 @@ public:
 
   std::vector<Particle> flushed_particles; // For debugging
 
-  Subtree(const CkCallback&, int, int, int, TCHolder<Data>,
+  Subtree(/*const CkCallback&,*/ int, int, int, TCHolder<Data>,
           CProxy_Resumer<Data>, CProxy_CacheManager<Data>, DPHolder<Data>, 
           CProxy_TreeSpec trsp, CProxy_Reader rds, CProxy_ThreadStateHolder tsh, CProxy_NewMain nm, bool);
   Subtree(CkMigrateMessage * msg){
@@ -106,7 +106,7 @@ public:
 };
 
 template <typename Data>
-Subtree<Data>::Subtree(const CkCallback& cb, int n_total_particles_,
+Subtree<Data>::Subtree(/*const CkCallback& cb,*/ int n_total_particles_,
                        int n_subtrees_, int n_partitions_, TCHolder<Data> tc_holder,
                        CProxy_Resumer<Data> r_proxy_,
                        CProxy_CacheManager<Data> cm_proxy_, DPHolder<Data> dp_holder,
@@ -127,6 +127,7 @@ Subtree<Data>::Subtree(const CkCallback& cb, int n_total_particles_,
 
   matching_decomps = matching_decomps_;
 
+
   tp_key = treespec.ckLocalBranch()->getSubtreeDecomposition()->
     getTpKey(this->thisIndex);
 
@@ -140,8 +141,7 @@ Subtree<Data>::Subtree(const CkCallback& cb, int n_total_particles_,
   treespec.ckLocalBranch()->getTree()->buildCanopy(this->thisIndex, sendProxy, treespec);
 
   local_root = nullptr;
-
-  this->contribute(cb);
+  //this->contribute(cb);
 }
 
 template <typename Data>

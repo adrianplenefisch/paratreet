@@ -24,10 +24,12 @@
 #include "Writer.h"
 #include "Subtree.h"
 #include "unionFindLib.h"
+#include "NewMainMessages.h"
 
 //extern CProxy_Reader readers;
 //extern CProxy_TreeSpec treespec;
 //extern CProxy_ThreadStateHolder thread_state_holder;
+
 
 template <typename Data>
 class Driver : public CBase_Driver<Data> {
@@ -55,11 +57,14 @@ public:
             CProxy_Reader rds,
             CProxy_TreeSpec trsp,
             CProxy_ThreadStateHolder tsh,
-            CProxy_NewMain nm) :
-    cache_manager(cache_manager_), resumer(resumer_), calculator(calculator_), storage_sorted(false),treespec(trsp),thread_state_holder(tsh),readers(rds),new_main(nm) {}
+            CProxy_NewMain nm,
+            CProxy_Subtree<Data> st,
+            CProxy_Partition<Data> pt) :
+    cache_manager(cache_manager_), resumer(resumer_), calculator(calculator_), storage_sorted(false),treespec(trsp),thread_state_holder(tsh),readers(rds),new_main(nm),
+    partitions(pt),subtrees(st) {}
 
   // Performs initial decomposition
-  void init(const CkCallback& cb, const paratreet::Configuration& cfg) {
+  void init(const CkCallback& cb, const paratreet::Configuration& cfg,Particle* pm, int n_particles) {
     // Ensure all treespecs have been created
     CkPrintf("* Validating tree specifications.\n");
     treespec.receiveConfiguration(
@@ -70,10 +75,10 @@ public:
     CkPrintf("* Initializing cache managers.\n");
     cache_manager.initialize(CkCallbackResumeThread());
     // Useful particle keys
-    CkPrintf("* Initialization\n");
-    decompose(0);
+    decompose(0, pm, n_particles);
     cb.send();
   }
+
 
   void remakeUniverse() {
     Vector3D<Real> bsize = universe.box.size();
@@ -97,17 +102,28 @@ public:
   // Performs decomposition by distributing particles among Subtrees,
   // by either loading particle information from input file or re-computing
   // the universal bounding box
-  void decompose(int iter) {
+  void decompose(int iter, Particle* pm, int n_particles) {
     CkReductionMsg* mymsg;
 
     new_main.getConfiguration(CkCallbackResumeThread((void*&)mymsg));
     paratreet::Configuration* config = (paratreet::Configuration*)mymsg;
     double decomp_time = CkWallTimer();
+    depthMsg* depthmsg;
+    new_main.getDepth(CkCallbackResumeThread((void*&)depthmsg));
     if (iter == 0) {
       // Build universe
       start_time = CkWallTimer();
       CkReductionMsg* result;
-      readers.load(config->input_file, CkCallbackResumeThread((void*&)result));
+
+      if(depthmsg->depth == 0)
+      {
+        readers.load(config->input_file, CkCallbackResumeThread((void*&)result));
+      }
+      else
+      {
+        //ReaderParticleMsg* rpm = new ReaderParticleMsg(pm, n_particles, CkCallbackResumeThread((void*&)result));
+        readers.loadFromMsg(pm, n_particles, CkCallbackResumeThread((void*&)result));
+      }
       CkPrintf("Loading Tipsy data and building universe: %.3lf ms\n",
           (CkWallTimer() - start_time) * 1000);
       
@@ -117,6 +133,8 @@ public:
           readers.setSoft(config->dSoft, CkCallbackResumeThread());
       }
       universe = *((BoundingBox*)result->getData());
+
+      CkPrintf("Universal bounding box volume: %f\n",universe.box.volume());
       delete result;
       remakeUniverse();
       if (config->min_n_subtrees < CkNumPes() || config->min_n_partitions < CkNumPes()) {
@@ -142,12 +160,33 @@ public:
     // Create Partitions
     CkArrayOptions partition_opts(n_partitions);
     treespec.ckLocalBranch()->getPartitionDecomposition()->setArrayOpts(partition_opts, {}, false);
-    partitions = CProxy_Partition<Data>::ckNew(
+    if(depthmsg->depth == 0)
+    {
+      partitions = CProxy_Partition<Data>::ckNew(
       n_partitions, cache_manager, resumer, calculator,
       this->thisProxy,readers, treespec, thread_state_holder, new_main, n_readers, matching_decomps, partition_opts
       );
+      libProxy = UnionFindLib::unionFindInit(partitions, n_partitions);
+    }
+    else
+    {
+      for(int i =0; i<n_partitions;++i)
+      {
+        partitions[i].insert(n_partitions, cache_manager, resumer, calculator,
+        this->thisProxy,readers, treespec, thread_state_holder, new_main, n_readers, matching_decomps);
+      }
+      partitions.doneInserting();
 
-    libProxy = UnionFindLib::unionFindInit(partitions, n_partitions);
+
+      CkArrayOptions opts(n_partitions);
+      opts.bindTo(partitions);
+      CProxy_UnionFindLib::ckNew(opts,CkCallback(CkIndex_Driver<Data>::createdLibProxy(NULL), this->thisProxy));
+
+    
+
+    }
+
+    
     partitions.passUnionFindLib(libProxy);
     CkPrintf("Created %d Partitions: %.3lf ms\n", n_partitions,
         (CkWallTimer() - start_time) * 1000);
@@ -177,18 +216,37 @@ public:
 
     // Create Subtrees
     start_time = CkWallTimer();
-    CkArrayOptions subtree_opts(n_subtrees);
-    if (matching_decomps) subtree_opts.bindTo(partitions);
-    treespec.ckLocalBranch()->getSubtreeDecomposition()->setArrayOpts(subtree_opts, partition_locations, !matching_decomps);
-    subtrees = CProxy_Subtree<Data>::ckNew(
-      CkCallbackResumeThread(),
+    CkPrintf("Creating subtrees! Matching decomps is %d\n", matching_decomps);
+    if(depthmsg->depth == 0)
+    {
+      CkArrayOptions subtree_opts(n_subtrees);
+      if (matching_decomps) subtree_opts.bindTo(partitions);
+      treespec.ckLocalBranch()->getSubtreeDecomposition()->setArrayOpts(subtree_opts, partition_locations, !matching_decomps); 
+      subtrees = CProxy_Subtree<Data>::ckNew(/*
+      CkCallbackResumeThread(),*/
       universe.n_particles, n_subtrees, n_partitions,
       calculator, resumer,
       cache_manager, this->thisProxy,treespec,readers,thread_state_holder, new_main, matching_decomps, subtree_opts
       );
+    }
+    else
+    {
+      CkArrayOptions subtree_opts(n_subtrees);
+      treespec.ckLocalBranch()->getSubtreeDecomposition()->setArrayOpts(subtree_opts, partition_locations, !matching_decomps); 
+      
+      for(int i =0; i<n_partitions;++i)
+      {
+        CkPrintf("inside four loop with i=%d\n", i);
+        subtrees[i].insert(/*
+        CkCallbackResumeThread(),*/
+        universe.n_particles, n_subtrees, n_partitions,
+        calculator, resumer,
+        cache_manager, this->thisProxy,treespec,readers,thread_state_holder, new_main, matching_decomps);
+      }
+      subtrees.doneInserting();
+    }
     CkPrintf("Created %d Subtrees: %.3lf ms\n", n_subtrees,
         (CkWallTimer() - start_time) * 1000);
-
     start_time = CkWallTimer();
     readers.flush(n_subtrees, subtrees);
     CkStartQD(CkCallbackResumeThread());
@@ -205,6 +263,24 @@ public:
 
     
 
+  }
+
+  void createdLibProxy(CkArrayCreatedMsg *m)
+  {
+      libProxy = CProxy_UnionFindLib(m->aid);
+      CkArrayOptions prefix_opts(n_partitions);
+      prefix_opts.bindTo(libProxy);
+      CProxy_Prefix::ckNew(n_partitions, prefix_opts,CkCallback(CkIndex_Driver<Data>::createdPrefix(NULL), this->thisProxy));
+      delete(m);
+  }
+
+  void createdPrefix(CkArrayCreatedMsg *m)
+  {
+      CProxy_Prefix prefixLibArray=CProxy_Prefix(m->aid);
+      libGroupID = CProxy_UnionFindLibGroup::ckNew();
+
+      libProxy.passLibGroupID(libGroupID, prefixLibArray);
+      delete(m);
   }
 
   // Core iterative loop of the simulation
@@ -338,7 +414,7 @@ public:
         treespec.reset();
         subtrees.destroy();
         partitions.destroy();
-        decompose(iter+1);
+        decompose(iter+1, 0,0);
       } else {
         partitions.reset();
         subtrees.reset();
@@ -360,6 +436,17 @@ public:
     }
 
     cb.send();
+  }
+
+  void destroyAll()
+  {
+    treespec.reset();
+    subtrees.destroy();
+    partitions.destroy();
+    cache_manager.destroy(true);
+    CkCallback statsCb (CkReductionTarget(Driver<Data>, countInts), this->thisProxy);
+    thread_state_holder.collectAndResetStats(statsCb);
+    storage.clear();
   }
 
   // -------------------

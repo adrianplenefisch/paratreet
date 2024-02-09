@@ -4,14 +4,31 @@
 #include "paratreet.decl.h"
 #include "Configuration.h"
 #include "Paratreet.h"
+#include "ParticleMsg.h"
 
 
 class NewMain: public CBase_NewMain {
   public:
     using main_type_ = std::unique_ptr<paratreet::MainBase>;
     main_type_ main_;
+    int depth;
+    Particle* pm;
+    int n_particles;
+
     
     NewMain(StartMessage* mm);
+
+    template <typename Data>
+    void passArrayProxies(CProxy_TreeCanopy<Data> tc,CProxy_Subtree<Data> st,
+            CProxy_Partition<Data> p)
+    {
+        static_cast<paratreet::Main<Data>*>(main_.get())->p = p;
+        static_cast<paratreet::Main<Data>*>(main_.get())->st = st;
+        static_cast<paratreet::Main<Data>*>(main_.get())->tc = tc;
+        CkCallback runCB(CkIndex_NewMain::run(), thisProxy);
+        main_->initializeDriver(runCB, pm,n_particles);
+    }
+
     void start(StartMessage* m);
     void run();
 
@@ -43,6 +60,8 @@ class NewMain: public CBase_NewMain {
     void setConfiguration(std::shared_ptr<paratreet::Configuration>&& cfg);
 
     void getConfiguration(CkCallback cb);
+
+    void getDepth(CkCallback cb);
 
     void getTimestep(BoundingBox box, Real real, CkCallback cb);
 };

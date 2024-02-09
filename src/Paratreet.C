@@ -12,6 +12,7 @@
 #include "CacheManager.h"
 #include "Resumer.h"
 #include "NewMain.h"
+#include "ParticleMsg.h"
 
 /* readonly  CProxy_Reader readers;*/
 /* readonly  CProxy_TreeSpec treespec;*/
@@ -22,7 +23,25 @@ using namespace paratreet;
 
 MainChare::MainChare(CkArgMsg* m)
 {
-    StartMessage* mm = new StartMessage(m->argc, m->argv,true);
+
+    size_t argv_alloc_size=m->argc;
+    for(int i =0; i<m->argc; ++i)
+    {
+        argv_alloc_size+=strlen(m->argv[i]);
+    }
+    //argv = (char*)malloc(sizeof(char)*argv_alloc_size);
+    StartMessage* mm = new (0, argv_alloc_size) StartMessage(m->argc,true,0);
+    int it = 0;
+    for(int i =0; i<m->argc;++i)
+    {
+        for(int j=0; j<strlen(m->argv[i]);++j)
+        {
+            mm->argv[it] = m->argv[i][j];
+            ++it;
+        }
+        mm->argv[it]=' ';
+        ++it;
+    }
     CProxy_NewMain firstmain = CProxy_NewMain::ckNew(mm);
     
     

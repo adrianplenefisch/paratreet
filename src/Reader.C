@@ -118,6 +118,60 @@ void Reader::load(std::string input_file, const CkCallback& cb) {
   }
 }
 
+void Reader::loadFromMsg(Particle* pm, int n_total, const CkCallback& cb)
+{
+  //assuming all are dark matter. This will need to change
+  int n_dark = n_total;
+  int n_sph = 0;
+  int n_star = 0;
+  start_time = 0;
+
+  int n_particles = n_total / n_readers;
+  int excess = n_total % n_readers;
+  unsigned int start_particle = n_particles * thisIndex;
+  if (thisIndex < (unsigned int)excess) {
+    n_particles++;
+    start_particle += thisIndex;
+  } else {
+    start_particle += excess;
+  }
+
+  // Prepare bounding box
+  BoundingBox box;
+  box.pe = 0.0;
+  box.ke = 0.0;
+
+  // Reserve space
+  particles.resize(n_particles);
+
+
+  for (unsigned int i = 0; i < n_particles; i++) {
+    particles[i].potential = particles[i].u = particles[i].soft = 0u;
+    particles[i].mass = pm[i+start_particle].mass;
+    particles[i].position = pm[i+start_particle].position;
+    particles[i].velocity = pm[i+start_particle].velocity;
+    particles[i].soft = pm[i+start_particle].soft;
+    particles[i].type = Particle::Type::eDark;
+    box.n_dark++;
+    particles[i].order = start_particle + i;
+    particles[i].velocity_predicted = particles[i].velocity;
+    particles[i].u_predicted = particles[i].u;
+    box.grow(particles[i].position);
+    box.mass += particles[i].mass;
+    box.ke += particles[i].mass * particles[i].velocity.lengthSquared();
+    box.pe = 0.0;
+    CkPrintf("inside loadFromMsg.The position is %f, %f,%f\n\n",particles[i].position[0],particles[i].position[1],particles[i].position[2]);
+  }
+
+  box.ke /= 2.0;
+  box.n_particles = particles.size();
+
+  // Reduce to universal bounding box
+
+  
+  contribute(sizeof(BoundingBox), &box, BoundingBox::reducer(), cb);
+}
+
 
 void Reader::setSoft(const double dSoft, const CkCallback& cb) {
     for (std::vector<Particle>::iterator it = particles.begin();

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstring>
 
 #include "Paratreet.h"
 #include "CentroidData.h"
@@ -61,14 +62,12 @@ class FoF : public paratreet::Main<CentroidData> {
 
   CProxy_UnionFindLib libProxy;
   CProxy_Partition<CentroidData> partitionProxy;
-  CkArgMsg* mmsg;
 
   public: 
   FoF(CProxy_NewMain nm) : Main(nm) {}
   
   void main(CkArgMsg* m) override {
     // Initialize readonly variables
-    mmsg = m;
     if (conf.input_file.empty()) 
       CkPrintf("warning: no input file provided\n");
     CkAssert(!conf.input_file.empty());
@@ -114,7 +113,6 @@ class FoF : public paratreet::Main<CentroidData> {
           CkExit();
       }
     }
-    //delete m;
 
     // Print configuration
     CkPrintf("\n[PARATREET]\n");
@@ -171,7 +169,6 @@ class FoF : public paratreet::Main<CentroidData> {
   }
 
   void traversalFn(BoundingBox universe, ProxyPack<CentroidData> proxy_pack, int iter, CkCallback cb) override {
-    CkPrintf("Got inside traversalFn\n");
     //only need to look at cubes that are almost touching (N=1)
     if(!periodic)
     {
@@ -261,10 +258,17 @@ class FoF : public paratreet::Main<CentroidData> {
     );
     CkWaitQD();*/
 
-    /*CkPrintf("Attempting to run subsetCreator functions. \n");
+    CkPrintf("Attempting to run subsetCreator functions. \n");
+
     subsetCreator subset_creator = subsetCreator();
     subset_creator.createSubsets(partitionProxy,universe.n_particles);
-    subset_creator.runSubsets(mmsg);*/
+
+    CkArgMsg* mm = new CkArgMsg(); 
+    mm->argc = subset_argc;
+    mm->argv = subset_argv;
+
+    
+    subset_creator.runSubsets(mm, conf.input_file, universe, driver);
 
     cb.send();
 
@@ -328,7 +332,7 @@ void __register(void) {
 
 NewMain::NewMain(StartMessage* mm) {
     main_.reset(new FoF(thisProxy));
-    
+    depth = mm->d;
     start(mm);
 }
 

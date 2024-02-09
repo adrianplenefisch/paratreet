@@ -18,6 +18,8 @@
 
 #include "ProxyPackSeparate.h"
 
+#include "NewMainMessages.h"
+
 
 
 
@@ -64,20 +66,33 @@
 struct StartMessage : CMessage_StartMessage
 {
     int argc;
-    char** argv;
     bool useInputFile;
-    std::vector<Particle> passed_particles;
-    StartMessage(int c, char** v, bool useInputFile) {
+    int d;
+    int n_particles;
+    Particle* passed_particles;
+    char* argv;
+    /*CProxy_TreeCanopy<Data> treeCanopys;
+    CProxy_Subtree<Data> subtrees;
+    CProxy_Partition<Data> partitions;*/
+
+    StartMessage(int c, bool useInputFile, int depth) {
         argc = c;
-        argv = v;
         useInputFile = useInputFile;
+        d = depth; 
+        n_particles = 0;
         
     }
-    StartMessage(int c, char** v, bool useInputFile, std::vector<Particle> passed_p) {
+    StartMessage(int c, bool useInputFile, int depth, int passed_n/*,CProxy_TreeCanopy<Data> tc, CProxy_Subtree<Data> st, CProxy_Partition<Data> pt*/) {
+        /*treeCanopys =tc;
+        subtrees = st;
+        partitions = pt;*/
+
+        
         argc = c;
-        argv = v;
         useInputFile = useInputFile;
-        passed_particles = passed_p;
+        n_particles = passed_n;
+
+        d = depth; 
     }
 };
 
@@ -110,7 +125,9 @@ namespace paratreet {
 
 
     template<typename Data>
-    CProxy_Driver<Data> initialize(const CkCallback& cb, CProxy_NewMain nm);
+    CProxy_Driver<Data> initialize(const CkCallback& cb, CProxy_NewMain nm, Particle* pm, int n_particles,
+            CProxy_TreeCanopy<Data> treeCanopys, CProxy_Subtree<Data> subtrees, 
+            CProxy_Partition<Data> partitions);
 
     class MainBase {
         // use a shared ptr to enable custom deleters
@@ -123,6 +140,8 @@ namespace paratreet {
         : config_(std::forward<configuration_ptr>(config)) {}
 
       public:
+        int subset_argc;
+        char** subset_argv;
         inline void setConfiguration(configuration_ptr&& cfg) {
             this->config_ = std::forward<configuration_ptr>(cfg);
         }
@@ -136,7 +155,7 @@ namespace paratreet {
         virtual void run(void) = 0;
 
         virtual Real getTimestep(BoundingBox&, Real) = 0;
-        virtual void initializeDriver(const CkCallback&) = 0;
+        virtual void initializeDriver(const CkCallback&, Particle*, int) = 0;
         
 
         virtual void setDefaults(void) {}
@@ -172,14 +191,16 @@ namespace paratreet {
             new_main = nm;
         }
 
-        virtual void initializeDriver(const CkCallback& cb) override {
-            this->driver = initialize<T>(cb, new_main);
+        virtual void initializeDriver(const CkCallback& cb, Particle* pm, int n_particles) override {
+            this->driver = initialize<T>(cb, new_main, pm, n_particles,tc,st,p);
         }
 
         //variables for input to type erased functions 
         ProxyPack<T> pp;
         SpatialNode<T> n;
         CProxy_Partition<T> p;
+        CProxy_Subtree<T> st;
+        CProxy_TreeCanopy<T> tc;
 
         virtual void preTraversalFn(ProxyPack<T>, CkCallback) = 0;
         virtual void traversalFn(BoundingBox, ProxyPack<T>, int, CkCallback) = 0;
@@ -297,7 +318,9 @@ namespace paratreet {
     }*/
 
     template<typename Data>
-    CProxy_Driver<Data> initialize(const CkCallback& cb,CProxy_NewMain nm) {
+    CProxy_Driver<Data> initialize(const CkCallback& cb,CProxy_NewMain nm, Particle* pm, int n_particles,
+                CProxy_TreeCanopy<Data> treeCanopys, CProxy_Subtree<Data> subtrees, 
+                CProxy_Partition<Data> partitions) {
         // Create readers
         int n_readers = CkNumPes();
         
@@ -307,12 +330,23 @@ namespace paratreet {
         //CProxy_UnionFindLib libProxy = UnionFindLib::unionFindInit(partitions, n_partitions);
 
         // Create library chares
-        CProxy_TreeCanopy<Data> canopy = CProxy_TreeCanopy<Data>::ckNew();
-        canopy.doneInserting();
+        CProxy_TreeCanopy<Data> canopy;
+        depthMsg* depthmsg;
+        nm.getDepth(CkCallbackResumeThread((void*&)depthmsg));
+
+        if(depthmsg->depth == 0)
+        {
+            canopy = CProxy_TreeCanopy<Data>::ckNew();
+            canopy.doneInserting();
+        }
+        else
+        {
+            canopy = treeCanopys;
+        }
         CProxy_CacheManager<Data> cache = CProxy_CacheManager<Data>::ckNew(nm);
         CProxy_Resumer<Data> resumer = CProxy_Resumer<Data>::ckNew();
 
-        CProxy_Driver<Data> driver = CProxy_Driver<Data>::ckNew(cache, resumer, canopy,readers,treespec,thread_state_holder,nm, CkMyPe());
+        CProxy_Driver<Data> driver = CProxy_Driver<Data>::ckNew(cache, resumer, canopy,readers,treespec,thread_state_holder,nm, subtrees, partitions, CkMyPe());
         // Call the driver initialization routine (performs decomposition)
 
         CkReductionMsg* mymsg = 0;
@@ -323,7 +357,7 @@ namespace paratreet {
         
 
 
-        driver.init(cb, CkReference<Configuration>(*cfg));
+        driver.init(cb, CkReference<Configuration>(*cfg),pm, n_particles);
 
         return driver;
     }

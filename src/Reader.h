@@ -32,6 +32,7 @@ class Reader : public CBase_Reader {
 
     // Loading particles and assigning keys
     void load(std::string, const CkCallback&);
+    void loadFromMsg(Particle* pm, int n_total, const CkCallback&);
     void setSoft(const double dSoft, const CkCallback&);
     void computeUniverseBoundingBox(const CkCallback& cb);
     void assignKeys(BoundingBox, const CkCallback&);

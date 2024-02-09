@@ -32,7 +32,14 @@ void BoundingBox::grow(const BoundingBox &other){
     *this = other;
   }
   else{
+    CkPrintf("Growing bounding box: {{%f,%f,%f},{%f,%f,%f}} with {{%f, %f, %f},{%f,%f,%f}}\n", 
+              box.lesser_corner.x, box.lesser_corner.y,box.lesser_corner.z,
+              box.greater_corner.x,box.greater_corner.y,box.greater_corner.z,
+              other.box.lesser_corner.x, other.box.lesser_corner.y,other.box.lesser_corner.z,
+              other.box.greater_corner.x,other.box.greater_corner.y,other.box.greater_corner.z);
     box.grow(other.box);
+    CkPrintf("Got new bounding box: {{%f,%f,%f},{%f,%f,%f}}\n",box.lesser_corner.x, box.lesser_corner.y,box.lesser_corner.z,
+              box.greater_corner.x,box.greater_corner.y,box.greater_corner.z);
     n_particles += other.n_particles;
     n_dark += other.n_dark;
     n_sph += other.n_sph;
@@ -72,6 +79,8 @@ ostream &operator<<(ostream &os, const BoundingBox &bb){
 }
 
 CkReductionMsg* BoundingBox::reduceFn(int n_msgs, CkReductionMsg** msgs) {
+
+  CkPrintf("Inside BoundingBox::reduceFn\n\n");
   BoundingBox* b = static_cast<BoundingBox*>(msgs[0]->getData());
   if (n_msgs > 1) {
     BoundingBox* msgb;
