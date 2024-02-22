@@ -81,9 +81,12 @@ public:
 
 
   void remakeUniverse() {
+    std::cout << "Inside remakeUniverse: Universal bounding box: " << universe << " with volume "
+      << universe.box.volume() << std::endl;
     Vector3D<Real> bsize = universe.box.size();
     Real max = (bsize.x > bsize.y) ? bsize.x : bsize.y;
     max = (max > bsize.z) ? max : bsize.z;
+    CkPrintf("Inside remakeUniverse: Max is: %f\n",max);
     Vector3D<Real> bcenter = universe.box.center();
     // The magic number below is approximately 2^(-19)
     const Real fEps = 1.0 + 1.91e-6;  // slop to ensure keys fall between 0 and 1.
@@ -91,7 +94,7 @@ public:
     universe.box = OrientedBox<Real>(bcenter-bsize, bcenter+bsize);
     thread_state_holder.setUniverse(universe);
 
-    std::cout << "Universal bounding box: " << universe << " with volume "
+    std::cout << "1 Universal bounding box: " << universe << " with volume "
       << universe.box.volume() << std::endl;
   }
 
@@ -279,6 +282,8 @@ public:
       CProxy_Prefix prefixLibArray=CProxy_Prefix(m->aid);
       libGroupID = CProxy_UnionFindLibGroup::ckNew();
 
+      CkPrintf("To pass in createdPrefix: %p, %d\n",prefixLibArray, libGroupID);
+
       libProxy.passLibGroupID(libGroupID, prefixLibArray);
       delete(m);
   }
@@ -286,7 +291,7 @@ public:
   // Core iterative loop of the simulation
   void run(CkCallback cb) {
     CkPrintf("driver::run\n");
-    std::cout << "Universal bounding box: " << universe << " with volume "
+    std::cout << "2 Universal bounding box: " << universe << " with volume "
       << universe.box.volume() << std::endl;
 
       CkReductionMsg* mymsg;
@@ -324,9 +329,11 @@ public:
       msg->toTuple(&res, &numRedn);
       Real max_velocity = *(Real*)(res[0].data); // avoid max_velocity = 0.0
 
-      CkReductionMsg* mymsg2;
+      timestepMsg* mymsg2;
       new_main.getTimestep(universe, max_velocity,CkCallbackResumeThread((void*&)mymsg2));
-      Real timestep_size = *((Real*)mymsg);
+      Real timestep_size = mymsg2->time_step;
+
+      delete(mymsg2);
 
       #ifdef FOF
       ProxyPack<Data> proxy_pack (this->thisProxy, subtrees, partitions, cache_manager, libProxy, thread_state_holder);
@@ -353,7 +360,7 @@ public:
 
       new_main.traversalFn(universe, proxy_pack, iter, CkCallbackResumeThread());
 
-      std::cout << "Universal bounding box: " << universe << " with volume "
+      std::cout << "3 Universal bounding box: " << universe << " with volume "
       << universe.box.volume() << std::endl;
 
       CkWaitQD();

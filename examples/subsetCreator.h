@@ -57,7 +57,7 @@ public:
     void runSubsets(CkArgMsg* m, std::string input_file, BoundingBox universe, CProxy_Driver<CentroidData> driver)
     {
         std::sort(toSend.begin(),toSend.end(),compare_size);
-        for(int i = 0; i<1;++i)
+        for(int i = 0; i<5;++i)
         {
             //create new universe
             BoundingBox small_universe = *(new BoundingBox());
@@ -67,7 +67,7 @@ public:
 
 
             //write tipsy file for specific subset
-            write(small_universe, input_file+("_i")+std::to_string(i),toSend[i]);
+            write(small_universe, input_file+(".")+std::to_string(i),toSend[i]);
 
 
             //create arrays for new subset
@@ -83,18 +83,18 @@ public:
             //Create the input message for the new subset
             //char* argv;
             size_t argv_alloc_size=m->argc;
-            for(int i =0; i<m->argc; ++i)
+            for(int ii =0; ii<m->argc; ++ii)
             {
-                argv_alloc_size+=strlen(m->argv[i]);
+                argv_alloc_size+=strlen(m->argv[ii]);
             }
             //argv = (char*)malloc(sizeof(char)*argv_alloc_size);
-            StartMessage* mm = new (toSend[i].size(), argv_alloc_size) StartMessage(m->argc,false,1,toSend[i].size());
+            StartMessage* mm = new (toSend[i].size(), argv_alloc_size) StartMessage(m->argc,false,1,toSend[i].size(),i);
             int it = 0;
-            for(int i =0; i<m->argc;++i)
+            for(int ii =0; ii<m->argc;++ii)
             {
-                for(int j=0; j<strlen(m->argv[i]);++j)
+                for(int j=0; j<strlen(m->argv[ii]);++j)
                 {
-                    mm->argv[it] = m->argv[i][j];
+                    mm->argv[it] = m->argv[ii][j];
                     ++it;
                 }
                 mm->argv[it]=' ';
@@ -133,7 +133,7 @@ public:
 
     bool use_double = sizeof(Real) == 8;
 
-    auto output_filename = output_file + ".tipsy";
+    auto output_filename = output_file;
 
     CmiFopen(output_filename.c_str(), "w");
 

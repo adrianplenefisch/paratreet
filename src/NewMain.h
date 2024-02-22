@@ -12,6 +12,7 @@ class NewMain: public CBase_NewMain {
     using main_type_ = std::unique_ptr<paratreet::MainBase>;
     main_type_ main_;
     int depth;
+    int group_index;
     Particle* pm;
     int n_particles;
 

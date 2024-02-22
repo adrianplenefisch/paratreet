@@ -8,6 +8,14 @@ public:
 	depthMsg(int d) :depth(d) {}
 };
 
+
+
+class timestepMsg : public CMessage_timestepMsg {
+public:
+	Real time_step;
+	timestepMsg(Real ts) :time_step(ts) {}
+};
+
 template<typename configuration_type>
 class configurationMsg :public CMessage_configurationMsg<configuration_type> {
 public:

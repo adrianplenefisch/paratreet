@@ -11,7 +11,7 @@
 #include "subsetCreator.h"
 #include "FoF.decl.h"
 
-extern Real linkingLength;
+//extern Real linkingLength;
 extern Vector3D<Real> fPeriod;
 
 class subsetVisitor {
@@ -30,7 +30,7 @@ public:
 
     bool open(const SpatialNode<CentroidData>& source, SpatialNode<CentroidData>& target)
     {
-        Real r_bucket = target.data.size_sm + linkingLength;
+        /*Real r_bucket = target.data.size_sm + linkingLength;
         if (!Space::intersect(source.data.box, target.data.box.center()+offset, r_bucket*r_bucket))
         return false;
 
@@ -41,7 +41,7 @@ public:
         if(Space::intersect(source.data.box, target.particles()[i].position+offset, ballSq))
             return true;
         }
-        return false;
+        return false;*/
     }
 
 
@@ -53,7 +53,7 @@ public:
 
     void leaf(const SpatialNode<CentroidData>& source, SpatialNode<CentroidData>& target) 
     {
-        for (int i = 0; i < target.n_particles; i++) {
+        /*for (int i = 0; i < target.n_particles; i++) {
             for (int j = 0; j < source.n_particles; j++) {
                 const Particle& sp = source.particles()[j];
                 const Particle& tp = target.particles()[i];
@@ -62,7 +62,7 @@ public:
                     //if(target.)
                 }
             }
-        }
+        }*/
     }
 };
 

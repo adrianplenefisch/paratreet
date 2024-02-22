@@ -69,6 +69,7 @@ struct StartMessage : CMessage_StartMessage
     bool useInputFile;
     int d;
     int n_particles;
+    int group_index;
     Particle* passed_particles;
     char* argv;
     /*CProxy_TreeCanopy<Data> treeCanopys;
@@ -80,9 +81,10 @@ struct StartMessage : CMessage_StartMessage
         useInputFile = useInputFile;
         d = depth; 
         n_particles = 0;
+        group_index = 0;
         
     }
-    StartMessage(int c, bool useInputFile, int depth, int passed_n/*,CProxy_TreeCanopy<Data> tc, CProxy_Subtree<Data> st, CProxy_Partition<Data> pt*/) {
+    StartMessage(int c, bool useInputFile, int depth, int passed_n, int gindex) {
         /*treeCanopys =tc;
         subtrees = st;
         partitions = pt;*/
@@ -93,6 +95,7 @@ struct StartMessage : CMessage_StartMessage
         n_particles = passed_n;
 
         d = depth; 
+        group_index = gindex;
     }
 };
 

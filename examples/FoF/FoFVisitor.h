@@ -13,7 +13,6 @@
 
 //extern CProxy_UnionFindLib libProxy;
 //extern CProxy_Partition<CentroidData> partitionProxy;
-extern Real linkingLength;
 extern Vector3D<Real> fPeriod;
 
 class FoFVisitor {
@@ -22,16 +21,18 @@ class FoFVisitor {
 private:
   CProxy_UnionFindLib libProxy;
   Vector3D<Real> offset;
+  Real linkingLength;
 public:
   static constexpr const bool CallSelfLeaf = true;
-  FoFVisitor() : offset(0, 0, 0) {}
-  FoFVisitor(CProxy_UnionFindLib lbpx) : offset(0, 0, 0), libProxy(lbpx) {}
-  FoFVisitor(Vector3D<Real> offseti, CProxy_UnionFindLib lbpx) : offset(offseti), libProxy(lbpx) {}
+  FoFVisitor() :offset(0, 0, 0) , linkingLength(1) {}
+  FoFVisitor(Real linking_length, CProxy_UnionFindLib lbpx) : offset(0, 0, 0), linkingLength(linking_length),  libProxy(lbpx) {}
+  FoFVisitor(Real linking_length, Vector3D<Real> offseti, CProxy_UnionFindLib lbpx) : offset(offseti), linkingLength(linking_length),  libProxy(lbpx) {}
 
 
   void pup(PUP::er& p) {
     p | offset;
     p | libProxy;
+    p | linkingLength;
   }
   
 

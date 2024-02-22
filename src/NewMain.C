@@ -55,6 +55,13 @@ void NewMain::start(StartMessage* m)
     CkArgMsg* mm = new CkArgMsg(); 
     mm->argc = m->argc;
     mm->argv = to_parse;
+
+    if(m->d != 0)
+    {
+        main->configuration().linking_length /= 2;
+        CkPrintf("LINKING LENGTH: %f\n",main->configuration().linking_length);
+        main->configuration().output_file.append("."+to_string(group_index));
+    }
     main->main(mm);
 
     
@@ -68,6 +75,7 @@ void NewMain::start(StartMessage* m)
     }
     else
     {
+
         pm = m->passed_particles;
         n_particles = m->n_particles;
     }
@@ -103,7 +111,7 @@ void NewMain::getTimestep(BoundingBox box, Real real, CkCallback cb)
 {
     Real time_step = main_->getTimestep(box, real);
     //this->contribute(sizeof(Real), &time_step, CkReduction::nop, cb);
-    cb.send(&time_step);
+    cb.send(new timestepMsg(time_step));
 }
 
 

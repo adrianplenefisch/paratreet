@@ -39,6 +39,7 @@ module paratreet {
   };
 
   message depthMsg;
+  message timestepMsg;
 
   template<typename configuration_type>
   message configurationMsg;

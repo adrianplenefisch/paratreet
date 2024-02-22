@@ -5,7 +5,7 @@ mainmodule FoF {
     //readonly CProxy_UnionFindLib libProxy;
     //readonly CProxy_Partition<CentroidData> partitionProxy;
     readonly int peanoKey;
-    readonly Real linkingLength;
+    //readonly Real linkingLength;
     readonly int periodic;
     readonly Vector3D<Real> fPeriod;
     readonly int minVerticesPerComponent; // strictly greater than
