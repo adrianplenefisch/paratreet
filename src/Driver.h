@@ -75,6 +75,11 @@ public:
     CkPrintf("* Initializing cache managers.\n");
     cache_manager.initialize(CkCallbackResumeThread());
     // Useful particle keys
+    for(int i = 0; i<n_particles;++i)
+    {
+      CkPrintf("Particle position in driver init: %f, %f, %f\n",pm[i].position.x,pm[i].position.y,pm[i].position.z);
+
+    }
     decompose(0, pm, n_particles);
     cb.send();
   }
@@ -280,7 +285,7 @@ public:
   void createdPrefix(CkArrayCreatedMsg *m)
   {
       CProxy_Prefix prefixLibArray=CProxy_Prefix(m->aid);
-      libGroupID = CProxy_UnionFindLibGroup::ckNew();
+      CkGroupID libGroupID = CProxy_UnionFindLibGroup::ckNew(libProxy);
 
       CkPrintf("To pass in createdPrefix: %p, %d\n",prefixLibArray, libGroupID);
 

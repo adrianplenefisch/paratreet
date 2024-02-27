@@ -68,17 +68,25 @@ void NewMain::start(StartMessage* m)
 
     if(m->d == 0)
     {
+        
         pm = 0;
         n_particles = 0;
         CkCallback runCB(CkIndex_NewMain::run(), thisProxy);
         main->initializeDriver(runCB, m->passed_particles,m->n_particles);
+        
     }
     else
     {
-
-        pm = m->passed_particles;
+        pm = (Particle*)malloc(sizeof(Particle)*m->n_particles);
+        //pm = m->passed_particles;
         n_particles = m->n_particles;
+        for(int i=0; i<n_particles; ++i)
+        {
+            pm[i]=m->passed_particles[i];
+        }
+        
     }
+    delete(m);
 }
 
 void NewMain::run() {

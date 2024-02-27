@@ -56,8 +56,11 @@ public:
 
     void runSubsets(CkArgMsg* m, std::string input_file, BoundingBox universe, CProxy_Driver<CentroidData> driver)
     {
+        //destroy previously used subtrees and partitions
+        driver.destroyAll();
+        
         std::sort(toSend.begin(),toSend.end(),compare_size);
-        for(int i = 0; i<5;++i)
+        for(int i = 0; i<10;++i)
         {
             //create new universe
             BoundingBox small_universe = *(new BoundingBox());
@@ -115,8 +118,7 @@ public:
             //free(argv);
             
         }
-        //destroy previously used subtrees and partitions
-        driver.destroyAll();
+        
     }
 
 

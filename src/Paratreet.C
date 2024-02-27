@@ -42,7 +42,7 @@ MainChare::MainChare(CkArgMsg* m)
         mm->argv[it]=' ';
         ++it;
     }
-    CProxy_NewMain firstmain = CProxy_NewMain::ckNew(mm);
+    CProxy_NewMain firstmain = CProxy_NewMain::ckNew(mm,0);
     
     
 }

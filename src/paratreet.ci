@@ -223,7 +223,7 @@ module paratreet {
   chare NewMain {
 
 
-    entry [nokeep] NewMain(StartMessage* mm);
+    entry NewMain(StartMessage* mm);
     entry [threaded] void start(StartMessage* m);
     entry [threaded] void run();
 
