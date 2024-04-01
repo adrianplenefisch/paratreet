@@ -19,7 +19,7 @@
 /* readonly */ int peanoKey;
 /* readonly */ Vector3D<Real> fPeriod;
 /* readonly */ int nReplicas;
-/* readonly */ Real theta;
+/* readonly */ //Real theta;
 /* readonly */ int iter_start_collision;
 /* readonly */ Real max_timestep;
 /* readonly */ CProxy_EwaldData ewaldProxy;

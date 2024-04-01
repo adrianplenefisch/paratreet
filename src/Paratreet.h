@@ -378,6 +378,7 @@ namespace paratreet {
         partitions.output(w, universe.n_particles, CkCallback::ignore);
         CkWaitQD();
         w[0].write(CkCallbackResumeThread());
+        delete(mymsg);
     }
 
     template<typename Data>

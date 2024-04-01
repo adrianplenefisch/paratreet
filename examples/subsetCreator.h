@@ -60,9 +60,10 @@ public:
         driver.destroyAll();
         
         std::sort(toSend.begin(),toSend.end(),compare_size);
-        for(int i = 0; i<10;++i)
+        for(int i = 0; i<5;++i)
         {
             //create new universe
+            shiftPosToCenter(toSend[i].data(),toSend[i].size(), Vector3D<Real>(0,0,0));
             BoundingBox small_universe = *(new BoundingBox());
             small_universe.n_particles = toSend[i].size();
             small_universe.n_dark = toSend[i].size();
@@ -125,65 +126,81 @@ public:
 
     void write(BoundingBox box, std::string output_file, std::vector<Particle> particles)
     {
-    Tipsy::header tipsyHeader;
+        Tipsy::header tipsyHeader;
 
-    //tipsyHeader.time = time_;
-    tipsyHeader.nbodies = box.n_particles;
-    tipsyHeader.nsph = box.n_sph;
-    tipsyHeader.ndark = box.n_dark;
-    tipsyHeader.nstar = box.n_star;
+        //tipsyHeader.time = time_;
+        tipsyHeader.nbodies = box.n_particles;
+        tipsyHeader.nsph = box.n_sph;
+        tipsyHeader.ndark = box.n_dark;
+        tipsyHeader.nstar = box.n_star;
 
-    bool use_double = sizeof(Real) == 8;
+        bool use_double = sizeof(Real) == 8;
 
-    auto output_filename = output_file;
+        auto output_filename = output_file;
 
-    CmiFopen(output_filename.c_str(), "w");
+        CmiFopen(output_filename.c_str(), "w");
 
-    Tipsy::TipsyWriter w(output_filename, tipsyHeader, false, use_double, use_double);
+        Tipsy::TipsyWriter w(output_filename, tipsyHeader, false, use_double, use_double);
 
-    w.writeHeader();
+        w.writeHeader();
 
-    if(!w.seekParticleNum(0)) {
-        CkPrintf("seeking %d particles for total %d gas %d dark %d star %d\n",
-        0, box.n_particles, box.n_sph, box.n_dark, box.n_star);
-        CkAbort("bad seek");
+        if(!w.seekParticleNum(0)) {
+            CkPrintf("seeking %d particles for total %d gas %d dark %d star %d\n",
+            0, box.n_particles, box.n_sph, box.n_dark, box.n_star);
+            CkAbort("bad seek");
+        }
+
+        for (const auto& p : particles) {
+            if (p.isGas()) {
+            Tipsy::gas_particle_t<Real, Real> gp;
+            gp.mass = p.mass;
+            gp.pos = p.position;
+            gp.vel = p.velocity; // dvFac = 1
+            if(!w.putNextGasParticle_t(gp)) {
+                CkError("[%d] Write gas failed, errno %d: %s\n", CkMyPe(), errno, strerror(errno));
+                CkAbort("Bad Write");
+            }
+            }
+            else if (p.isDark()) {
+            Tipsy::dark_particle_t<Real, Real> dp;
+            dp.mass = p.mass;
+            dp.pos = p.position;
+            dp.vel = p.velocity; // dvFac = 1
+            if(!w.putNextDarkParticle_t(dp)) {
+                CkError("[%d] Write dark failed, errno %d: %s\n", CkMyPe(), errno, strerror(errno));
+                CkAbort("Bad Write");
+            }
+            }
+            else if (p.isStar()) {
+            Tipsy::star_particle_t<Real, Real> sp;
+            sp.mass = p.mass;
+            sp.pos = p.position;
+            sp.vel = p.velocity; // dvFac = 1
+            if(!w.putNextStarParticle_t(sp)) {
+                CkError("[%d] Write star failed, errno %d: %s\n", CkMyPe(), errno, strerror(errno));
+                CkAbort("Bad Write");
+            }
+            }
+
+        }
     }
 
-    for (const auto& p : particles) {
-        if (p.isGas()) {
-        Tipsy::gas_particle_t<Real, Real> gp;
-        gp.mass = p.mass;
-        gp.pos = p.position;
-        gp.vel = p.velocity; // dvFac = 1
-        if(!w.putNextGasParticle_t(gp)) {
-            CkError("[%d] Write gas failed, errno %d: %s\n", CkMyPe(), errno, strerror(errno));
-            CkAbort("Bad Write");
-        }
-        }
-        else if (p.isDark()) {
-        Tipsy::dark_particle_t<Real, Real> dp;
-        dp.mass = p.mass;
-        dp.pos = p.position;
-        dp.vel = p.velocity; // dvFac = 1
-        if(!w.putNextDarkParticle_t(dp)) {
-            CkError("[%d] Write dark failed, errno %d: %s\n", CkMyPe(), errno, strerror(errno));
-            CkAbort("Bad Write");
-        }
-        }
-        else if (p.isStar()) {
-        Tipsy::star_particle_t<Real, Real> sp;
-        sp.mass = p.mass;
-        sp.pos = p.position;
-        sp.vel = p.velocity; // dvFac = 1
-        if(!w.putNextStarParticle_t(sp)) {
-            CkError("[%d] Write star failed, errno %d: %s\n", CkMyPe(), errno, strerror(errno));
-            CkAbort("Bad Write");
-        }
-        }
+    void shiftPosToCenter(Particle* particles, int n_particles, Vector3D<Real> period)
+    {
+        CkAssert(n_particles>0);
+        Vector3D<Real> origin = particles[0].position;
+        for(int i = 0; i<n_particles;++i)
+        {
+            particles[i].position-= origin;
+            if(particles[i].position.x>period.x/2){particles[i].position.x-=period.x;}
+            else if(particles[i].position.x<-period.x/2){particles[i].position.x+=period.x;}
+            if(particles[i].position.y>period.y/2){particles[i].position.y-=period.y;}
+            else if(particles[i].position.y<period.y/2){particles[i].position.y+=period.y;}
+            if(particles[i].position.z>period.z/2){particles[i].position.z-=period.z;}
+            else if(particles[i].position.z<period.z/2){particles[i].position.z+=period.z;}
 
+        }
     }
-    }
-
 
 
 };

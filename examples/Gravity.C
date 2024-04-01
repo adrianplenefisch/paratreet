@@ -10,7 +10,7 @@ extern bool dual_tree;
 extern int periodic;
 extern Vector3D<Real> fPeriod;
 extern int nReplicas;
-extern Real theta;
+//extern Real theta;
 extern Real max_timestep;
 extern int nReplicas;
 extern CProxy_EwaldData ewaldProxy;

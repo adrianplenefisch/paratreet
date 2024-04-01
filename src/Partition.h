@@ -447,16 +447,6 @@ void Partition<Data>::flush(CProxy_Reader readers, std::vector<Particle>& partic
 }
 
 template <typename Data>
-void Partition<Data>::callPerLeafFn(const CkCallback& cb)
-{
-  for (auto && leaf : leaves) {
-    new_main.perLeafFn(0,*leaf, this->thisProxy);
-  }
-
-  this->contribute(cb);
-}
-
-template <typename Data>
 void Partition<Data>::copyParticles(std::vector<Particle>& particles, bool check_delete) {
   for (auto && leaf : leaves) {
     for (int i = 0; i < leaf->n_particles; i++) {

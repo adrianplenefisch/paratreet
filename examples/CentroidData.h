@@ -127,6 +127,7 @@ struct CentroidData {
     if (p.isUnpacking()) pps.resize(num_leaves);
     for (int i = 0; i < num_leaves; i++) {
       p | pps[i].ball;
+      p | pps[i].neighbors;
     }
   }
 

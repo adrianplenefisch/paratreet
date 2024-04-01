@@ -13,6 +13,7 @@
 
 
 #include "DensityVisitor.h"
+#include "GravityVisitor.h"
 #include "SPHUtils.h"
 #include "ThreadStateHolder.h"
 
@@ -188,21 +189,20 @@ class FoF : public paratreet::Main<CentroidData> {
       }
     }
     double start_time = CkWallTimer();
-    /*proxy_pack.partition.template startUpAndDown<DensityVisitor>(DensityVisitor());
-    CkWaitQD();
-    CkPrintf("K-nearest neighbors traversal: %.3lf ms\n", (CkWallTimer() - start_time) * 1000);
-    start_time = CkWallTimer();
-    // by now, all density requests have gone out
-    proxy_pack.partition.callPerLeafFn(
-      //PARATREET_PER_LEAF_FN(DensityFn, CentroidData), // calculates density, fills requests
-      CkCallbackResumeThread()
-    );
-    CkWaitQD();
-    CkPrintf("Density calculations and sharing: %.3lf ms\n", (CkWallTimer() - start_time) * 1000);
-    */
-    //proxy_pack.partition.template startDown<subsetVisitor>(subsetVisitor(Vector3D<Real> (0,0,0)));
-    //CProxy_subsetCreator::ckNew();
+    depthMsg* depthmsg;
+    new_main.getDepth(CkCallbackResumeThread((void*&)depthmsg));
+    if(depthmsg->depth != 0)
+    {
+      proxy_pack.partition.template startDown<GravityVisitor>(GravityVisitor(Vector3D<Real>(0, 0, 0), 0.7));
 
+      proxy_pack.partition.template startUpAndDown<DensityVisitor>(DensityVisitor());
+      proxy_pack.partition.callPerLeafFn(CkCallbackResumeThread());
+    }
+    delete(depthmsg);
+
+    
+
+    
 
     cb.send();
 
@@ -253,27 +253,23 @@ class FoF : public paratreet::Main<CentroidData> {
     CkPrintf("K-nearest neighbors traversal: %.3lf ms\n", (CkWallTimer() - startTime) * 1000);
     startTime = CkWallTimer();
     // by now, all density requests have gone out
-    proxy_pack.partition.callPerLeafFn(
-      PARATREET_PER_LEAF_FN(DensityFn, CentroidData), // calculates density, fills requests
-      CkCallbackResumeThread()
-    );
-    CkWaitQD();*/
+    */
     depthMsg* depthmsg;
     new_main.getDepth(CkCallbackResumeThread((void*&)depthmsg));
     if(depthmsg->depth == 0)
     {
 
-    CkPrintf("Attempting to run subsetCreator functions. \n");
+      CkPrintf("Attempting to run subsetCreator functions. \n");
 
-    subsetCreator subset_creator = subsetCreator();
-    subset_creator.createSubsets(partitionProxy,universe.n_particles);
+      subsetCreator subset_creator = subsetCreator();
+      subset_creator.createSubsets(partitionProxy,universe.n_particles);
 
-    CkArgMsg* mm = new CkArgMsg(); 
-    mm->argc = subset_argc;
-    mm->argv = subset_argv;
+      CkArgMsg* mm = new CkArgMsg(); 
+      mm->argc = subset_argc;
+      mm->argv = subset_argv;
 
-    
-    subset_creator.runSubsets(mm, conf.input_file, universe, driver);
+      
+      subset_creator.runSubsets(mm, conf.input_file, universe, driver);
 
     }
     delete(depthmsg);
@@ -295,6 +291,8 @@ class FoF : public paratreet::Main<CentroidData> {
     for (int pi = 0; pi < leaf.n_particles; pi++) {
       auto& part = leaf.particles()[pi];
       auto& Q = leaf.data.pps[pi].neighbors;
+      CkPrintf("leaf.data.pps[pi].neighbors.size() is %d\n",leaf.data.pps[pi].neighbors.size());
+      CkAssert(leaf.data.pps[pi].neighbors.size()!=0);
       auto rsq = Q[0].fKey, fBall = std::sqrt(rsq);
       // sum up the density. requires 0ing of densities
       Real density = 0.;
@@ -343,6 +341,42 @@ NewMain::NewMain(StartMessage* mm) {
     depth = mm->d;
     group_index =mm->group_index;
     start(mm);
+}
+
+template <typename Data>
+void Partition<Data>::callPerLeafFn(const CkCallback& cb)
+{
+  for (auto && leaf : leaves) {
+    //CkAssert(leaf->data.pps[0].neighbors.size()!=0);
+    //new_main.perLeafFn(0,*leaf, this->thisProxy);
+    {
+    leaf->data.max_rad = 0;
+    for (int pi = 0; pi < leaf->n_particles; pi++) {
+      auto& part = leaf->particles()[pi];
+      auto& Q = leaf->data.pps[pi].neighbors;
+      auto rsq = Q[0].fKey, fBall = std::sqrt(rsq);
+      // sum up the density. requires 0ing of densities
+      Real density = 0.;
+      auto ih2 = 4.0 / rsq;  // 1/h^2
+      for (int i = 0; i < Q.size(); i++) {
+        auto& fDist2 = Q[i].fKey;
+        auto r2 = fDist2 * ih2;
+        auto rs = kernelM4(r2);
+        density += rs * Q[i].pPtr->mass;
+      }
+      Real r_cubed = rsq * fBall;
+      density /= (0.125 * M_PI * r_cubed);
+      auto copy_part = part;
+      copy_part.density = density;
+      leaf->changeParticle(pi, copy_part);
+      leaf->data.pps[pi].sphBallSq = rsq;
+      leaf->data.max_rad = std::max(leaf->data.max_rad, fBall);
+      Q.clear();
+    }
+    }
+  }
+
+  this->contribute(cb);
 }
 
 template void NewMain::preTraversalFn(ProxyPack<CentroidData>,CkCallback);

@@ -22,6 +22,7 @@ void Writer::write(CkCallback cb)
               return left.order < right.order;
             });
   do_write();
+  CkPrintf("Cur_dim: %d\n",cur_dim);
   cur_dim = (cur_dim + 1) % 3;
   if (thisIndex != CkNumPes() - 1) thisProxy[thisIndex + 1].write(cb);
   else if (cur_dim == 0) cb.send();
@@ -35,6 +36,7 @@ void Writer::do_write()
   FILE *fpDen;
   FILE *fpPres;
   FILE *fpGrp;
+  FILE *fpPot;
   if (thisIndex == 0 && cur_dim == 0) {
     fp = CmiFopen((output_file+".acc").c_str(), "w");
     fprintf(fp, "%d\n", total_particles);
@@ -46,6 +48,10 @@ void Writer::do_write()
     fpGrp = CmiFopen((output_file+".grp").c_str(), "w");  // grp = group number for FoF connected component
     fprintf(fpGrp, "%d\n", total_particles);
     #endif // FOF
+
+    fpPot = CmiFopen((output_file+".pot").c_str(), "w");
+    fprintf(fpPot, "%d\n", total_particles);
+
   } else {
       fp = CmiFopen((output_file+".acc").c_str(), "a");
       fpDen = CmiFopen((output_file+".den").c_str(), "a");
@@ -53,11 +59,14 @@ void Writer::do_write()
       #ifdef FOF
       fpGrp = CmiFopen((output_file+".grp").c_str(), "a");
       #endif // FOF
+
+      fpPot = CmiFopen((output_file+".pot").c_str(), "a");
   }
   CkAssert(fp);
   CkAssert(fpDen);
   CkAssert(fpPres);
   CkAssert(fpGrp);
+  CkAssert(fpPot);
 
   for (const auto& particle : particles) {
     Real outval;
@@ -72,6 +81,8 @@ void Writer::do_write()
         #ifdef FOF
         fprintf(fpGrp, "%ld\n", particle.group_number);
         #endif // FOF
+
+        fprintf(fpPot, "%.14g\n", particle.potential);
     }
   }
 
@@ -85,6 +96,9 @@ void Writer::do_write()
   result = CmiFclose(fpGrp);
   CkAssert(result == 0);
   #endif // FOF
+
+  result = CmiFclose(fpPot);
+  CkAssert(result == 0);
 }
 
 TipsyWriter::TipsyWriter(std::string of, BoundingBox b)

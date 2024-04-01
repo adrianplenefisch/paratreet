@@ -55,6 +55,9 @@ public:
           std::push_heap(&(Q)[0] + 0, &(Q)[0] + Q.size());
         }
       }
+      //CkAssert(target.data.pps[i].neighbors.size()!=0);
+      //CkPrintf("DensityVisitor target.data.pps[i].neighbors.size(): %d\n",target.data.pps[i].neighbors.size());
+
     }
   }
 };

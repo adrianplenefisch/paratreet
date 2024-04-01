@@ -13,16 +13,18 @@ public:
   static constexpr const bool TargetMustBeLeaf = true;
   static constexpr const Real opening_geometry_factor_squared = 4.0 / 3.0;
   GravityVisitor() : offset(0, 0, 0) {}
-  GravityVisitor(Vector3D<Real> offseti, Real theta) : offset(offseti), gravity_factor(opening_geometry_factor_squared / (theta * theta)) {}
+  GravityVisitor(Vector3D<Real> offseti, Real theta) : offset(offseti), theta(theta), gravity_factor(opening_geometry_factor_squared / (theta * theta)) {}
 
   void pup(PUP::er& p) {
     p | offset;
     p | gravity_factor;
+    p | theta;
   }
 
 private:
   Vector3D<Real> offset;
   Real gravity_factor;
+  Real theta;
 
 private:
   // note gconst = 1
@@ -138,6 +140,7 @@ public:
   void leaf(const SpatialNode<CentroidData>& source, SpatialNode<CentroidData>& target) {
     for (int i = 0; i < target.n_particles; i++) {
       Vector3D<Real> accel(0.0);
+      Real potential = 0;
       for (int j = 0; j < source.n_particles; j++) {
           Vector3D<Real> diff = source.particles()[j].position + offset - target.particles()[i].position;
           Real rsq = diff.lengthSquared();
@@ -147,9 +150,14 @@ public:
                                  * from SPLINE */
               SPLINE(rsq, twoh, a, b);
               accel += diff * (b * source.particles()[j].mass);
+              potential -= a * source.particles()[j].mass;
+              //CkPrintf("a is %f mass is %f\n",a,source.particles()[j].mass);
           }
+          
       }
+      //CkPrintf("Potential is %f\n\n",potential);
       target.applyAcceleration(i, accel);
+      target.applyPotential(i, potential);
     }
   }
 
@@ -164,7 +172,7 @@ public:
         }
         else {        // Open as monopole?
             // monopole criteria is much stricter
-            extern Real theta;
+            
             dataRsq *= pow(theta, -6);
             Sphere<Real> sM(source.data.centroid + offset, sqrt(dataRsq));
             return Space::intersect(target.data.box, sM);

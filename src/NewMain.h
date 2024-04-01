@@ -54,6 +54,7 @@ class NewMain: public CBase_NewMain {
     template<typename T>
     void perLeafFn(int indicator, SpatialNode<T> node, CProxy_Partition<T> partition) {
       static_cast<paratreet::Main<T>*>(main_.get())->n = node;
+      CkAssert(node.data.pps[0].neighbors.size()!=0);
       static_cast<paratreet::Main<T>*>(main_.get())->p = partition;
       main_->ErasedPerLeafFn(indicator);
     }

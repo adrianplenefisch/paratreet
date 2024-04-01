@@ -17,6 +17,7 @@ mainmodule FoF {
     extern entry void Partition<CentroidData> startDown<FoFVisitor> (FoFVisitor v);
     extern entry void Partition<CentroidData> startUpAndDown<DensityVisitor> (DensityVisitor v);
     extern entry void Partition<CentroidData> startDown<subsetVisitor> (subsetVisitor v);
+    extern entry void Partition<CentroidData> startDown<GravityVisitor> (GravityVisitor v);
 
     extern entry void NewMain preTraversalFn(ProxyPack<CentroidData>, CkCallback);
     extern entry void NewMain traversalFn(BoundingBox, ProxyPack<CentroidData>, int, CkCallback);
